@@ -3,6 +3,7 @@ import io
 import logging
 import threading
 import re
+from types import new_class
 from typing import Dict, List
 from time import sleep
 from datetime import datetime
@@ -33,9 +34,9 @@ from .constant import (
 )
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
-version = "0.7.0"
+version = "0.7.1"
 
 MAX_WARNING_COUNT = 3
 
@@ -68,6 +69,9 @@ class MCDU(WinwingDevice):
         self.vendor = ""
         self.icao = ""
         self.variant: str | None = None
+
+        self.new_icao = None
+        self.new_vendor = None
 
         self.buttons = []
         self._buttons_by_id = {}
@@ -126,6 +130,7 @@ class MCDU(WinwingDevice):
             logger.info(f"using aircraft configuration {filename}")
 
     def aircraft_from_configuration_file(self):
+        logger.debug("..loading aircraft from configuration file..")
         a = MCDUAircraft.load_from_file(filename=self.aircraft_config)
         if a._config is not None:
             logger.info(f"using aircraft configuration {self.aircraft_config}")
@@ -151,6 +156,7 @@ class MCDU(WinwingDevice):
         def strip_index(path):  # path[5] -> path
             return path.split("[")[0]
 
+        logger.debug("loading aircraft..")
         if not self.aircraft_forced:
             self.aircraft = MCDUAircraft(vendor=self.vendor, icao=self.icao, variant=self.variant)
         else:
@@ -177,6 +183,17 @@ class MCDU(WinwingDevice):
         self.register_datarefs(paths=self._loaded_datarefs)
         logger.debug(f"registered {len(self._loaded_datarefs)} datarefs for {self.set_mcdu_unit('MCDU1')}, {len(self.required_datarefs)} required")
         self.display.set_display_datarefs(dataref_list=self.required_datarefs, mcdu_units=self.mcdu_units)
+        logger.debug(f"loaded aircraft {self.icao}")
+
+    def unload_aircraft(self):
+        old_icao = self.icao
+        logger.debug(f"unloading aircraft {old_icao}..")
+        self.unload_datarefs()
+        self.buttons = []
+        self._buttons_by_id = {}
+        self.mcdu_units = []
+        self.aircraft = None
+        logger.debug(f"..unloaded aircraft {self.icao}")
 
     def unload_datarefs(self):
         self.unregister_datarefs(paths=list(self._loaded_datarefs))
@@ -368,9 +385,19 @@ class MCDU(WinwingDevice):
         d.value = value
 
         # Special datarefs for brightness control
-        if dataref == ICAO_DATAREF:
+        if dataref == ICAO_DATAREF or dataref == VENDOR_DATAREF:
             if self.aircraft is not None:
-                self.change_aircraft(new_icao=value)
+                if dataref == ICAO_DATAREF:
+                    self.new_icao = value
+                    logger.debug(f"got new icao: {dataref}={value}")
+                if dataref == VENDOR_DATAREF:
+                    self.new_vendor = value
+                    logger.debug(f"got new vendor: {dataref}={value}")
+                if self.new_icao is not None and self.new_vendor is not None:  # not thread safe
+                    logger.debug("got new icao and vendor, changing aircraft")
+                    self.change_aircraft(new_icao=self.new_icao, new_vendor=self.new_vendor)
+                    self.new_icao = None
+                    self.new_vendor = None
             # else, aircraft not loaded yet, will be loaded by wait_for_resources()
         if "Brightness" in dataref or "/anim" in dataref:
             if "DUBrightness" in dataref and value <= 1:
@@ -442,14 +469,33 @@ class MCDU(WinwingDevice):
         self.display._updated.set()
         return self.device.mcdu_unit_id
 
-    def change_aircraft(self, new_icao: str) -> str:
+    def change_aircraft(self, new_icao: str, new_vendor: str) -> str:
         # To do:
+        if new_icao not in VALID_ICAO_AIRCRAFTS:
+            logger.warning(f"{new_icao} not in list {','.join(VALID_ICAO_AIRCRAFTS)}")
+            logger.warning(f"aircraft discrepency MCDU aircraft {self.icao} vs X-Plane aircraft {new_icao}")
+            return self.icao
+
+        if self.aircraft_forced:
+            logger.warning(f"MCDU uses a user-supplied aircraft configuration for {self.icao} (file {self.aircraft_config})")
+            logger.warning(f"aircraft discrepency MCDU aircraft {self.icao} vs X-Plane aircraft {new_icao}")
+            logger.warning(f"stop and restart winwing-cli without custom aircraft configuration to handle current aircraft {new_icao}")
+            return self.icao
+
+        if new_icao == self.icao and new_vendor == self.vendor:
+            logger.debug("same aicraft, no need to change")
+            return self.icao
+
         # 1. Unregister current unit datarefs
-        self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.STATUS, on=True)
-        self.unload_datarefs()
+        self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.STATUS, on=True)  # will be set off in wait_for_data
+
         # 2. Change aircraft
-        self.wait_for_aircraft()
+        self.unload_aircraft()
+        self.vendor = new_vendor
+        self.icao = new_icao
+
         # 3. Load new aircraft datarefs and wait for data
+        self.wait_for_aircraft()
         self.wait_for_data()
         logger.info(f"aircraft is now {self.icao}")
         return self.icao

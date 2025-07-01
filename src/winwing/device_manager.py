@@ -4,9 +4,9 @@
 #   dean [at] fourwalledcubicle [dot] com
 #         www.fourwalledcubicle.com
 #
-import hid
-
 from typing import List
+
+import hid
 
 from .devices.winwing import WinwingDevice
 
@@ -14,6 +14,7 @@ from .devices.mcdu import MCDU
 
 WINWING_VENDOR_IDS = [16536]
 
+MCDU_PRODUCTS_ID = [47926]
 
 class DeviceManager:
     """
@@ -23,9 +24,11 @@ class DeviceManager:
     """
 
     @staticmethod
-    def new(vendor_id: int, product_id: int) -> WinwingDevice:
-        if product_id in [47926]:
+    def new(vendor_id: int, product_id: int) -> WinwingDevice | None:
+        if product_id in MCDU_PRODUCTS_ID:
             return MCDU(vendor_id=vendor_id, product_id=product_id)
+        print(f"no device handler for HID device {vendor_id}, {product_id}")
+        return None
 
     @staticmethod
     def enumerate() -> List[WinwingDevice]:

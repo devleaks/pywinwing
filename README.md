@@ -30,14 +30,24 @@ options:
 
 ```
 
+# Important Note
+
+`winwing-cli` application is stateless.
+
+In case of problem, misbehavior, errors... simply stop the application and restart it.
+If problem persists, enter an issue on github.
+
+
+# Future
+
 Works and tested with the following Winwing devices and listed aircrafts:
 
-- MCDU
-    - ToLiss A321+neo option
-    - ToLiss A330-900
-    - Flight Factor A350-900
+- [MCDU](https://winwingsim.com/view/goods-details.html?id=945)
+    - ToLiss [A321](https://store.x-plane.org/Airbus-A321-XP12-by-Toliss_p_1632.html)+[neo option](https://store.x-plane.org/A321-NEO-ADD-ON-to-the-ToLiss-Airbus-A321_p_1351.html)
+    - ToLiss [A330-900](https://store.x-plane.org/Airbus-A330-900-neo%C2%A0by%C2%A0ToLiss_p_1952.html)
+    - Flight Factor [A350-900](https://store.x-plane.org/Airbus-A350-XWB-Advanced-for-X-Plane-12-11_p_348.html)
 
 This development is a proof of concept and will be enhanced to work with other Winwing devices and other aircrafts.
 
 
-LAst updated July 2025
+Last updated July 2025

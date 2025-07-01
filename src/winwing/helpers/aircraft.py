@@ -51,7 +51,7 @@ class Aircraft(ABC):
     def load(self, prefix: str):
         fn = self.config_filename(prefix=prefix)
         if not os.path.exists(fn):
-            logger.warning("aircraft file {fn} not found")
+            logger.warning(f"aircraft file {fn} not found")
             return
         with open(fn, "r") as fp:
             self._config = yaml.load(fp)

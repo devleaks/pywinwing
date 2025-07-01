@@ -1,5 +1,5 @@
-vendor: toliss
-icao: A339
+vendor: Gliding Kiwi
+icao: A321
 # variant: none
 mcdu-units: [1, 2]
 keys:

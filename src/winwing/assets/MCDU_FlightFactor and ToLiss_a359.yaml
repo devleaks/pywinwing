@@ -1,5 +1,5 @@
-vendor: toliss
-icao: A339
+vendor: FlightFactor and ToLiss
+icao: A359
 # variant: none
 mcdu-units: [1, 2]
 keys:

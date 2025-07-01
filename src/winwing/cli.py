@@ -13,7 +13,7 @@ from .device_manager import WINWING_VENDOR_IDS, DeviceManager
 FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
 logging.basicConfig(level=logging.INFO, format=FORMAT, datefmt="%H:%M:%S")
 
-parser = argparse.ArgumentParser(description="Winwing MCDU for X-Plane")
+parser = argparse.ArgumentParser(description="Winwing Devices for X-Plane")
 parser.add_argument("--version", action="store_true", help="show version information and exit")
 parser.add_argument("-v", "--verbose", action="store_true", help="show more information")
 parser.add_argument("-l", "--list", action="store_true", help="list Wingwing devices connected to the system")
