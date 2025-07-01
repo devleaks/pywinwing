@@ -1,5 +1,6 @@
 """
 """
+
 import re
 from typing import List
 
@@ -18,5 +19,6 @@ class MCDUAircraft(Aircraft):
     def mcdu_units(self) -> List[int]:
         return self._config.get("mcdu-units", [])
 
-    def is_display_dataref(self, dataref: str) -> bool:
+    @staticmethod
+    def is_display_dataref(dataref: str) -> bool:
         return re.match(MCDU_DISPLAY_DATA, dataref) is not None

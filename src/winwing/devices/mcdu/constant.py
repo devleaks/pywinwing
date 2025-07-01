@@ -1,7 +1,18 @@
 """Winwing MCDU constants
 """
 
+from dataclasses import dataclass
 from enum import Enum, IntEnum
+
+
+class MCDU_STATUS(IntEnum):
+    """Global MCDU adapter status"""
+
+    NOT_RUNNING = 0
+    CONNECTED = 1
+    AIRCRAFT_DETECTED = 2
+    WAITING_FOR_DATA = 3
+    RUNNING = 9
 
 
 class MCDU_DEVICE_MASKS(IntEnum):
@@ -98,14 +109,17 @@ PAGE_BYTES_PER_PAGE = PAGE_BYTES_PER_LINE * PAGE_LINES
 # Collection
 #
 
-AIRCRAFT_DATAREF = "sim/aircraft/view/acf_ICAO"
+VENDOR_DATAREF = "sim/aircraft/view/acf_author"
+ICAO_DATAREF = "sim/aircraft/view/acf_ICAO"
+AIRCRAFT_DATAREFS = [VENDOR_DATAREF, ICAO_DATAREF]
+
 VALID_ICAO_AIRCRAFTS = {
     "A321",
     "A21N",
     "A319",
     "A320",
     "A339",
-    "A350",
+    "A359",
 }
 
 
@@ -125,6 +139,18 @@ class DrefType(Enum):
     DATA = 0
     CMD = 1
     NONE = 2
+
+
+@dataclass
+class Button:
+    """Wrapper class around a MCDU key"""
+
+    id: int
+    label: str
+    dataref: str | None = None
+    dreftype: DrefType = DrefType.DATA
+    type: ButtonType = ButtonType.NONE
+    led: MCDU_ANNUNCIATORS | None = None
 
 
 def MCDU_INIT_SEQUENCE(background_color: list) -> list:

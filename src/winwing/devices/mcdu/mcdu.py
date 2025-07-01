@@ -4,8 +4,6 @@ import logging
 import threading
 import re
 from typing import Dict, List
-from enum import IntEnum
-from dataclasses import dataclass
 from time import sleep
 from datetime import datetime
 
@@ -18,12 +16,16 @@ from .device import MCDUDevice, MCDU_DEVICE_MASKS
 from .constant import (
     ButtonType,
     DrefType,
-    AIRCRAFT_DATAREF,
+    Button,
+    AIRCRAFT_DATAREFS,
+    ICAO_DATAREF,
+    VENDOR_DATAREF,
     VALID_ICAO_AIRCRAFTS,
     MCDU_ANNUNCIATORS,
     MCDU_BRIGHTNESS,
     MCDU_TERM_COLORS,
     MCDU_COLOR,
+    MCDU_STATUS,
     PAGE_LINES,
     PAGE_CHARS_PER_LINE,
     PAGE_BYTES_PER_CHAR,
@@ -33,31 +35,7 @@ from .constant import (
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-version = "0.6.0"
-
-
-# ##################
-#
-# Core MCDU class
-#
-@dataclass
-class Button:
-    """Wrapper class around a MCDU key"""
-    id: int
-    label: str
-    dataref: str | None = None
-    dreftype: DrefType = DrefType.DATA
-    type: ButtonType = ButtonType.NONE
-    led: MCDU_ANNUNCIATORS | None = None
-
-
-class MCDU_STATUS(IntEnum):
-    """Global MCDU adapter status"""
-    NOT_RUNNING = 0
-    CONNECTED = 1
-    AIRBUS_DETECTED = 2
-    WAITING_FOR_DATA = 3
-    RUNNING = 9
+version = "0.6.1"
 
 
 class MCDU(WinwingDevice):
@@ -77,6 +55,7 @@ class MCDU(WinwingDevice):
 
         # self.api = ws_api(host=kwargs.get("host", "127.0.0.1"), port=kwargs.get("port", "8086"))
         self.api = None  # ws_api(host="192.168.1.140", port="8080")
+        self.aircraft = None
         self._datarefs = {}
         self._loaded_datarefs = set()
 
@@ -118,7 +97,7 @@ class MCDU(WinwingDevice):
     def status(self, status: MCDU_STATUS):
         if self._status != status:
             self._status = status
-            logger.info(f"MCDU connector status is now {self.status_str}")
+            logger.info(f"MCDU status is now {self.status_str}")
 
     def set_api(self, api):
         self.api = api
@@ -134,20 +113,13 @@ class MCDU(WinwingDevice):
         self._ready = True
 
     def load_aircraft(self):
-        DREF_TYPE = {
-            "command": DrefType.CMD,
-            "data": DrefType.DATA,
-            "none": DrefType.NONE
-        }
-        BUTTON_TYPE = {
-            "none": ButtonType.NONE,
-            "press": ButtonType.TOGGLE,
-            "switch": ButtonType.SWITCH
-        }
+        DREF_TYPE = {"command": DrefType.CMD, "data": DrefType.DATA, "none": DrefType.NONE}
+        BUTTON_TYPE = {"none": ButtonType.NONE, "press": ButtonType.TOGGLE, "switch": ButtonType.SWITCH}
         BRIGHTNESS = {
             "screen_backlight": MCDU_BRIGHTNESS.SCREEN_BACKLIGHT,
             "backlight": MCDU_BRIGHTNESS.BACKLIGHT,
         }
+
         def mk_button(b: list) -> Button:
             b[3] = DREF_TYPE[b[3]]
             b[4] = BUTTON_TYPE[b[4]]
@@ -158,7 +130,7 @@ class MCDU(WinwingDevice):
         def strip_index(path):  # path[5] -> path
             return path.split("[")[0]
 
-        self.aircraft = MCDUAircraft(vendor="toliss", icao=self.icao)
+        self.aircraft = MCDUAircraft(vendor=self.vendor, icao=self.icao, variant=self.variant)
 
         # Install buttons
         self.buttons = [mk_button(b) for b in self.aircraft.mapped_keys()]
@@ -278,16 +250,23 @@ class MCDU(WinwingDevice):
 
     def wait_for_toliss_airbus(self):
         # should check sim/aircraft/view/acf_author == GlidingKiwi
-        self.register_datarefs(paths=[AIRCRAFT_DATAREF])
-        icao = self.get_dataref_value(AIRCRAFT_DATAREF)
+        self.register_datarefs(paths=AIRCRAFT_DATAREFS)
+        icao = self.get_dataref_value(ICAO_DATAREF)
+        vendor = self.get_dataref_value(VENDOR_DATAREF)
         if icao == "" or icao not in VALID_ICAO_AIRCRAFTS:
             while icao == "" or icao not in VALID_ICAO_AIRCRAFTS:
-                logger.warning(f"waiting for Toliss Airbus (current {icao} not in list {VALID_ICAO_AIRCRAFTS})")
+                logger.warning(f"waiting for valid aircraft (current {icao} not in list {VALID_ICAO_AIRCRAFTS})")
                 sleep(2)
-                icao = self.get_dataref_value(AIRCRAFT_DATAREF)
+                icao = self.get_dataref_value(ICAO_DATAREF)
+                vendor = self.get_dataref_value(VENDOR_DATAREF)
+            while vendor == "":
+                logger.warning("waiting for vendor")
+                sleep(2)
+                vendor = self.get_dataref_value(VENDOR_DATAREF)
         self.icao = icao
-        self.status = MCDU_STATUS.AIRBUS_DETECTED
-        logger.info(f"ToLiss Airbus {self.icao} detected")
+        self.vendor = vendor
+        logger.info(f"{self.vendor} {self.icao} detected")
+        self.status = MCDU_STATUS.AIRCRAFT_DETECTED
         # no change to status lights, we still need the data
 
     def wait_for_data(self):
@@ -316,7 +295,7 @@ class MCDU(WinwingDevice):
                 logger.warning(f"waiting for MCDU data ({cnt}/{expected})")
                 sleep(2)
                 cnt = data_count()
-            logger.info(f"MCDU {expected} data received")
+        logger.info(f"MCDU {expected} data received")
         self.device.set_unit_led(on=False)
         self.device.set_led(led=MCDU_ANNUNCIATORS.RDY, on=True)
         # turn off RDY two seconds later, RDY is used in CPLDC messaging
@@ -336,13 +315,15 @@ class MCDU(WinwingDevice):
         # Save value in dataref
         d = self._datarefs.get(dataref)
         if d is None:
-            print(f"dataref {dataref} not found in registed datarefs")
+            logger.warning(f"dataref {dataref} not found in registed datarefs")
             return
         d.value = value
 
         # Special datarefs for brightness control
-        if dataref == AIRCRAFT_DATAREF:
-            self.change_aircraft(new_icao=value)
+        if dataref == ICAO_DATAREF:
+            if self.aircraft is not None:
+                self.change_aircraft(new_icao=value)
+            # else, aircraft not loaded yet, will be loaded by wait_for_resources()
         if "Brightness" in dataref or "/anim" in dataref:
             if "DUBrightness" in dataref and value <= 1:
                 # brightness is in 0..1, we need 0..255
@@ -363,7 +344,7 @@ class MCDU(WinwingDevice):
                 self.set_brightness(dataref, value)
                 logger.debug(f"set brightness: {dataref}={value}")
         # MCDU text datarefs
-        if self.aircraft is not None and not self.aircraft.is_display_dataref(dataref):
+        if not MCDUAircraft.is_display_dataref(dataref):
             logger.debug(f"not a display dataref {dataref}")
             return
         self.display.variable_changed(dataref=dataref, value=value)
