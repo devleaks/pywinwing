@@ -36,7 +36,7 @@ from .constant import (
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-version = "0.7.1"
+version = "0.7.3"
 
 MAX_WARNING_COUNT = 3
 

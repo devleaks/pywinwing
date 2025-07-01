@@ -16,6 +16,7 @@ WINWING_VENDOR_IDS = [16536]
 
 MCDU_PRODUCTS_ID = [47926]
 
+
 class DeviceManager:
     """
     Central device manager, to enumerate any attached Winwing devices. An

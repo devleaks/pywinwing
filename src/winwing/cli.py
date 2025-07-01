@@ -5,7 +5,7 @@ import pprint
 import pathlib
 
 import hid
-from xpwebapi import ws_api
+from xpwebapi import ws_api, beacon
 
 from winwing import version
 from .device_manager import WINWING_VENDOR_IDS, DeviceManager
@@ -18,9 +18,10 @@ parser.add_argument("--version", action="store_true", help="show version informa
 parser.add_argument("-v", "--verbose", action="store_true", help="show more information")
 parser.add_argument("-l", "--list", action="store_true", help="list Wingwing devices connected to the system")
 parser.add_argument("-a", "--list-all", action="store_true", help="list all HID devices connected to the system")
+parser.add_argument("--use-beacon", action="store_true", help="attempt to use X-Plane UDP beacon to discover network address")
 parser.add_argument("--host", nargs=1, help="Host IP name or address for X-Plane Web API", default="127.0.0.1")
 parser.add_argument("--port", nargs=1, type=int, help="TCP port for X-Plane Web API", default=8086)
-parser.add_argument("--aircraft", nargs=1, type=pathlib.Path, metavar='acf.yaml', help="Use this aircraft configuration file")
+parser.add_argument("--aircraft", nargs=1, type=pathlib.Path, metavar="acf.yaml", help="Use this aircraft configuration file")
 
 args = parser.parse_args()
 
@@ -31,18 +32,20 @@ if args.version:
     print(version)
     os._exit(0)
 
+
 def print_device(d):
-    if d['vendor_id'] == 0 and d['product_id'] == 0:
+    if d["vendor_id"] == 0 and d["product_id"] == 0:
         return
     if args.verbose:
         pprint.pprint(device)
     else:
         print(f"{d['manufacturer_string']} {d['product_string']} (vendor id={d['vendor_id']}, product id={d['product_id']})")
 
+
 if args.list_all:
     shown = set()
     for device in hid.enumerate():
-        k = (device['vendor_id'], device['product_id'])
+        k = (device["vendor_id"], device["product_id"])
         if k not in shown:
             shown.add(k)
             print_device(device)
@@ -68,11 +71,20 @@ if args.list:
 def main():
     if args.verbose:
         print(f"options {args}")
-    host = args.host[0] if type(args.host) is list else args.host
-    port = args.port[0] if type(args.port) is list else args.port
-    if args.verbose:
-        print(f"api at {host}:{port}")
-    api = ws_api(host=host, port=port)
+    probe = None
+    api = None
+
+    if args.use_beacon:
+        probe = beacon()
+        api = ws_api()
+        probe.set_callback(api.beacon_callback)
+        probe.start_monitor()
+    else:
+        host = args.host[0] if type(args.host) is list else args.host
+        port = args.port[0] if type(args.port) is list else args.port
+        if args.verbose:
+            print(f"api at {host}:{port}")
+        api = ws_api(host=host, port=port)
 
     winwing_devices = DeviceManager.enumerate()
     if len(winwing_devices) > 0:
