@@ -30,6 +30,14 @@ options:
 
 ```
 
-Works and tested with Winwing MCDU on ToLiss A321+neo option, and ToLiss A330-900.
+Works and tested with the following Winwing devices and listed aircrafts:
 
-This development is a proof of concept and will not be enhanced to work with other aircraft.
+- MCDU
+    - ToLiss A321+neo option
+    - ToLiss A330-900
+    - Flight Factor A350-900
+
+This development is a proof of concept and will be enhanced to work with other Winwing devices and other aircrafts.
+
+
+LAst updated July 2025

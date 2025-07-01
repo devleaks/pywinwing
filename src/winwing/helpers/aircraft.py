@@ -25,6 +25,20 @@ class Aircraft(ABC):
         self.variant = variant
         self._config = None
 
+    @classmethod
+    def load_from_file(cls, filename):
+        if not os.path.exists(filename):
+            logger.warning(f"aircraft file {filename} not found")
+            return
+        with open(filename, "r") as fp:
+            config = yaml.load(fp)
+        a = cls(vendor=config.get("vendor"), icao=config.get("icao"))
+        a._config = config
+        v = config.get("variant")
+        if v is not None:
+            a.variant = v
+        return a
+
     def config_filename(self, prefix: str, extension: str = ".yaml"):
         d = os.path.dirname(__file__)
         fn = f"{prefix}_{self.vendor}_{self.icao}"

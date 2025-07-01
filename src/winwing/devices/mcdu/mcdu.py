@@ -33,9 +33,11 @@ from .constant import (
 )
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
-version = "0.6.1"
+version = "0.7.0"
+
+MAX_WARNING_COUNT = 3
 
 
 class MCDU(WinwingDevice):
@@ -56,6 +58,7 @@ class MCDU(WinwingDevice):
         # self.api = ws_api(host=kwargs.get("host", "127.0.0.1"), port=kwargs.get("port", "8086"))
         self.api = None  # ws_api(host="192.168.1.140", port="8080")
         self.aircraft = None
+        self.aircraft_config = None
         self._datarefs = {}
         self._loaded_datarefs = set()
 
@@ -93,6 +96,10 @@ class MCDU(WinwingDevice):
         """Should use REST API for some purpose"""
         return f"{MCDU_STATUS(self._status).name}"
 
+    @property
+    def aircraft_forced(self) -> bool:
+        return self.aircraft_config is not None
+
     @status.setter
     def status(self, status: MCDU_STATUS):
         if self._status != status:
@@ -104,13 +111,27 @@ class MCDU(WinwingDevice):
         self.api.add_callback(CALLBACK_TYPE.ON_DATAREF_UPDATE, self.on_dataref_update)
 
     def init(self):
-        self.display.startup_screen()
+        self.display.message("waiting for X-Plane...")
 
     def reset_buttons(self):
         self._buttons_press_event = [0] * len(self.buttons)
         self._buttons_release_event = [0] * len(self.buttons)
         self._last_large_button_mask = 0
         self._ready = True
+
+    def set_aircraft_configuration(self, filename):
+        self.aircraft_config = filename
+        a = MCDUAircraft.load_from_file(filename=filename)
+        if a._config is not None:
+            logger.info(f"using aircraft configuration {filename}")
+
+    def aircraft_from_configuration_file(self):
+        a = MCDUAircraft.load_from_file(filename=self.aircraft_config)
+        if a._config is not None:
+            logger.info(f"using aircraft configuration {self.aircraft_config}")
+            return a
+        else:
+            return None
 
     def load_aircraft(self):
         DREF_TYPE = {"command": DrefType.CMD, "data": DrefType.DATA, "none": DrefType.NONE}
@@ -130,7 +151,16 @@ class MCDU(WinwingDevice):
         def strip_index(path):  # path[5] -> path
             return path.split("[")[0]
 
-        self.aircraft = MCDUAircraft(vendor=self.vendor, icao=self.icao, variant=self.variant)
+        if not self.aircraft_forced:
+            self.aircraft = MCDUAircraft(vendor=self.vendor, icao=self.icao, variant=self.variant)
+        else:
+            self.aircraft = self.aircraft_from_configuration_file()
+            if self.aircraft is None:
+                logger.error(f"cannot load aircraft from configuration file {self.aircraft_config}")
+            else:  # transfer data acf -> mcdu
+                self.vendor = self.aircraft.vendor
+                self.icao = self.aircraft.icao
+                self.variant = self.aircraft.variant
 
         # Install buttons
         self.buttons = [mk_button(b) for b in self.aircraft.mapped_keys()]
@@ -177,14 +207,14 @@ class MCDU(WinwingDevice):
 
     def register_datarefs(self, paths: List[str]):
         self._datarefs = self._datarefs | {p: Dataref(api=self.api, path=p) for p in paths if p not in self._datarefs}
-        self.api.monitor_datarefs(datarefs=self._datarefs, reason="Winwing MCDU")
+        self.api.monitor_datarefs(datarefs=self._datarefs, reason=f"Winwing MCDU register {self.icao}")
 
     def unregister_datarefs(self, paths: List[str]):
         # Ignore supplied list, unregister all registered datarefs
-        self.api.unmonitor_datarefs(datarefs=self._datarefs, reason="Winwing MCDU")
+        self.api.unmonitor_datarefs(datarefs=self._datarefs, reason=f"Winwing MCDU unregister {self.icao}")
 
     def unregister_all_datarefs(self):
-        self.api.unregister_bulk_dataref_value_event(datarefs=self._datarefs, reason="Winwing MCDU")
+        self.api.unmonitor_datarefs(datarefs=self._datarefs, reason="Winwing MCDU terminates")
 
     def run(self):
         logger.debug("starting..")
@@ -197,8 +227,12 @@ class MCDU(WinwingDevice):
     def terminate(self):
         logger.debug("terminating..")
         self.device.set_callback(None)
+        self.unregister_all_datarefs()
         self.api.disconnect()
         self.display.stop_update()
+        self.device.clear()
+        for a in MCDU_ANNUNCIATORS:
+            self.set_annunciator(annunciator=a, on=False)
         self.device.stop()
         logger.debug("..terminated")
 
@@ -235,27 +269,37 @@ class MCDU(WinwingDevice):
         self._reads = self._reads + 1
 
     def wait_for_xplane(self):
-        self.device.set_led(led=MCDU_ANNUNCIATORS.FAIL, on=False)
-        self.device.set_led(led=MCDU_ANNUNCIATORS.RDY, on=False)
-        self.device.set_led(led=MCDU_ANNUNCIATORS.STATUS, on=False)
+        self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.FAIL, on=False)
+        self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.RDY, on=False)
+        self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.STATUS, on=False)
+        warning_count = 0
         if not self.api.connected:
-            self.device.set_led(led=MCDU_ANNUNCIATORS.FAIL, on=True)
+            self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.FAIL, on=True)
             while not self.api.connected:
-                logger.warning("waiting for X-Plane")
+                if warning_count <= MAX_WARNING_COUNT:
+                    last_warning = " (last warning)" if warning_count == MAX_WARNING_COUNT else ""
+                    logger.warning(f"waiting for X-Plane{last_warning}")
+                warning_count = warning_count + 1
                 sleep(2)
             logger.info("connected to X-Plane")
-        self.device.set_led(led=MCDU_ANNUNCIATORS.FAIL, on=False)
-        self.device.set_led(led=MCDU_ANNUNCIATORS.STATUS, on=True)
+        self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.FAIL, on=False)
+        self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.STATUS, on=True)
         self.status = MCDU_STATUS.CONNECTED
 
-    def wait_for_toliss_airbus(self):
+    def wait_for_aircraft(self):
         # should check sim/aircraft/view/acf_author == GlidingKiwi
         self.register_datarefs(paths=AIRCRAFT_DATAREFS)
+        if not self._ready:
+            self.display.message("waiting for aircraft...")
         icao = self.get_dataref_value(ICAO_DATAREF)
         vendor = self.get_dataref_value(VENDOR_DATAREF)
+        warning_count = 0
         if icao == "" or icao not in VALID_ICAO_AIRCRAFTS:
             while icao == "" or icao not in VALID_ICAO_AIRCRAFTS:
-                logger.warning(f"waiting for valid aircraft (current {icao} not in list {VALID_ICAO_AIRCRAFTS})")
+                if warning_count <= MAX_WARNING_COUNT:
+                    last_warning = " (last warning)" if warning_count == MAX_WARNING_COUNT else ""
+                    logger.warning(f"waiting for valid aircraft (current {icao} not in list {','.join(VALID_ICAO_AIRCRAFTS)}){last_warning}")
+                warning_count = warning_count + 1
                 sleep(2)
                 icao = self.get_dataref_value(ICAO_DATAREF)
                 vendor = self.get_dataref_value(VENDOR_DATAREF)
@@ -282,29 +326,33 @@ class MCDU(WinwingDevice):
         self.load_aircraft()
         logger.debug("..aircraft loaded")
         if not self._ready:
-            self.display.waiting_for_data()
+            self.display.message("waiting for data...")
         self.status = MCDU_STATUS.WAITING_FOR_DATA
-        self.device.set_led(led=MCDU_ANNUNCIATORS.STATUS, on=False)
-        self.device.set_unit_led()
+        self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.STATUS, on=False)
+        self.set_unit_warning()
         sleep(2)  # give a chance for data to arrive, 2.0 secs sufficient on medium computer
         expected = len(self.required_datarefs)
         cnt = data_count()
+        warning_count = 0
         if cnt != expected:
             self.status = MCDU_STATUS.WAITING_FOR_DATA
             while cnt != expected:
-                logger.warning(f"waiting for MCDU data ({cnt}/{expected})")
+                if warning_count <= MAX_WARNING_COUNT:
+                    last_warning = " (last warning)" if warning_count == MAX_WARNING_COUNT else ""
+                    logger.warning(f"waiting for MCDU data ({cnt}/{expected}){last_warning}")
+                warning_count = warning_count + 1
                 sleep(2)
                 cnt = data_count()
         logger.info(f"MCDU {expected} data received")
-        self.device.set_unit_led(on=False)
-        self.device.set_led(led=MCDU_ANNUNCIATORS.RDY, on=True)
+        self.set_unit_warning(on=False)
+        self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.RDY, on=True)
         # turn off RDY two seconds later, RDY is used in CPLDC messaging
         timer = threading.Timer(2.0, self.device.set_led, args=(MCDU_ANNUNCIATORS.RDY, False))
         timer.start()
 
     def wait_for_resources(self):
         self.wait_for_xplane()
-        self.wait_for_toliss_airbus()
+        self.wait_for_aircraft()
         self.wait_for_data()
         self.reset_buttons()
 
@@ -383,10 +431,10 @@ class MCDU(WinwingDevice):
     def change_mcdu_unit(self) -> int:
         # To do:
         # 1. Unregister current unit datarefs
-        self.device.set_unit_led()
+        self.set_unit_warning()
         self.unload_datarefs()
         # 2. Change unit id
-        self.device.set_unit_led(on=False)
+        self.set_unit_warning(on=False)
         self.device.set_unit(MCDU_DEVICE_MASKS.FO if self.device.mcdu_unit & MCDU_DEVICE_MASKS.CAP else MCDU_DEVICE_MASKS.CAP)
         # 3. Register new unit datarefs and wait for data
         self.wait_for_data()
@@ -397,10 +445,10 @@ class MCDU(WinwingDevice):
     def change_aircraft(self, new_icao: str) -> str:
         # To do:
         # 1. Unregister current unit datarefs
-        self.device.set_led(led=MCDU_ANNUNCIATORS.STATUS, on=True)
+        self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.STATUS, on=True)
         self.unload_datarefs()
         # 2. Change aircraft
-        self.wait_for_toliss_airbus()
+        self.wait_for_aircraft()
         # 3. Load new aircraft datarefs and wait for data
         self.wait_for_data()
         logger.info(f"aircraft is now {self.icao}")
@@ -445,6 +493,12 @@ class MCDU(WinwingDevice):
                 self.device.set_brightness(backlight=b.led, brightness=int(v))
         else:
             logger.warning(f"dataref {dataref} not found")
+
+    def set_annunciator(self, annunciator: MCDU_ANNUNCIATORS, on: bool = True):
+        self.device.set_led(led=annunciator, on=on)
+
+    def set_unit_warning(self, on: bool = True):
+        self.device.set_unit_led(on=on)
 
 
 # ##################
@@ -573,42 +627,23 @@ class MCDUDisplay:
         self.lines = {}
         self._all_ok = False
 
-    def startup_screen(self):
+    def message(self, message):
+        def center_line(line, text, color, font_small: bool = False):
+            text = text[:PAGE_CHARS_PER_LINE]
+            startpos = int((PAGE_CHARS_PER_LINE - len(text)) / 2)
+            self.write_line_to_page(line, startpos, text, color, font_small)
+
         self.device.clear()
         self.clear_page()
-        self.write_line_to_page(0, 5, "Winwing  MCDU", MCDU_COLOR.DEFAULT.value)
-        self.write_line_to_page(1, 5, "ToLiss Airbus", MCDU_COLOR.DEFAULT.value)
-        self.write_line_to_page(2, 6, "for X-Plane", MCDU_COLOR.DEFAULT.value)
-        self.write_line_to_page(4, 5, f"version {version}", "G", True)
-        self.write_line_to_page(12, 2, "github.com/devleaks", MCDU_COLOR.DEFAULT.value, True)
-        self.write_line_to_page(13, 1, "/winwing_toliss_mcdu", MCDU_COLOR.DEFAULT.value, True)
+        center_line(0, "Winwing  MCDU", MCDU_COLOR.DEFAULT.value)
+        center_line(1, "ToLiss Airbus", MCDU_COLOR.DEFAULT.value)
+        center_line(2, "for X-Plane", MCDU_COLOR.DEFAULT.value)
+        center_line(4, f"VERSION {version}", MCDU_COLOR.CYAN.value, True)
 
-        self.write_line_to_page(8, 1, "waiting for X-Plane...", "A")
+        center_line(8, message, MCDU_COLOR.AMBER.value)
 
-        self.device.display_page(page=self.page)
-
-    def waiting_for_data(self):
-        self.device.clear()
-        self.clear_page()
-        self.write_line_to_page(0, 5, "Winwing  MCDU", MCDU_COLOR.DEFAULT.value)
-        self.write_line_to_page(1, 5, "ToLiss Airbus", MCDU_COLOR.DEFAULT.value)
-        self.write_line_to_page(2, 6, "for X-Plane", MCDU_COLOR.DEFAULT.value)
-        self.write_line_to_page(4, 5, f"version {version}", "G", True)
-        self.write_line_to_page(12, 2, "github.com/devleaks", MCDU_COLOR.DEFAULT.value, True)
-        self.write_line_to_page(13, 1, "/winwing_toliss_mcdu", MCDU_COLOR.DEFAULT.value, True)
-
-        self.write_line_to_page(8, 2, "waiting for data...", "A")
-
-        self.device.display_page(page=self.page)
-
-    def message(self, message, show_heading: bool = True):
-        self.device.clear()
-        self.clear_page()
-        if show_heading:
-            self.write_line_to_page(0, 5, "Winwing  MCDU", MCDU_COLOR.DEFAULT.value)
-            self.write_line_to_page(1, 5, "ToLiss Airbus", MCDU_COLOR.DEFAULT.value)
-            self.write_line_to_page(2, 6, "for X-Plane", MCDU_COLOR.DEFAULT.value)
-        self.write_line_to_page(8, 1, message, "A")
+        center_line(12, "github.com/devleaks", MCDU_COLOR.DEFAULT.value, True)
+        center_line(13, "/winwing_toliss_mcdu", MCDU_COLOR.DEFAULT.value, True)
         self.device.display_page(page=self.page)
 
     def write_line_to_page(self, line, pos, text: str, color: str = MCDU_COLOR.DEFAULT.value, font_small: bool = False):
