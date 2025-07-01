@@ -12,6 +12,7 @@ from datetime import datetime
 from xpwebapi import CALLBACK_TYPE, Dataref, Command
 
 from ..winwing import WinwingDevice
+from .aircraft import MCDUAircraft
 
 from .device import MCDUDevice, MCDU_DEVICE_MASKS
 from .constant import (
@@ -19,11 +20,8 @@ from .constant import (
     DrefType,
     AIRCRAFT_DATAREF,
     VALID_ICAO_AIRCRAFTS,
-    MCDU_DISPLAY_DATAREFS,
-    MCDU_NO_DISPLAY_DATAREFS,
-    MDCU_KEYS,
-    MDCU_UNITS,
     MCDU_ANNUNCIATORS,
+    MCDU_BRIGHTNESS,
     MCDU_TERM_COLORS,
     MCDU_COLOR,
     PAGE_LINES,
@@ -33,9 +31,9 @@ from .constant import (
 )
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
 
-version = "0.5.0"
+version = "0.6.0"
 
 
 # ##################
@@ -48,10 +46,10 @@ class Button:
 
     id: int
     label: str
-    dataref: str = None
+    dataref: str | None = None
     dreftype: DrefType = DrefType.DATA
     type: ButtonType = ButtonType.NONE
-    led: MCDU_ANNUNCIATORS = None
+    led: MCDU_ANNUNCIATORS | None = None
 
 
 class MCDU_STATUS(IntEnum):
@@ -83,11 +81,14 @@ class MCDU(WinwingDevice):
         # self.api = ws_api(host=kwargs.get("host", "127.0.0.1"), port=kwargs.get("port", "8086"))
         self.api = None  # ws_api(host="192.168.1.140", port="8080")
         self._datarefs = {}
+        self._loaded_datarefs = set()
 
         self.required_datarefs = []
         self.mcdu_units = set()
 
+        self.vendor = ""
         self.icao = ""
+        self.variant: str | None = None
 
         self.buttons = []
         self._buttons_by_id = {}
@@ -135,27 +136,51 @@ class MCDU(WinwingDevice):
         self._last_large_button_mask = 0
         self._ready = True
 
-    def load_datarefs(self):
+    def load_aircraft(self):
+        DREF_TYPE = {
+            "command": DrefType.CMD,
+            "data": DrefType.DATA,
+            "none": DrefType.NONE
+        }
+        BUTTON_TYPE = {
+            "none": ButtonType.NONE,
+            "press": ButtonType.TOGGLE,
+            "switch": ButtonType.SWITCH
+        }
+        BRIGHTNESS = {
+            "screen_backlight": MCDU_BRIGHTNESS.SCREEN_BACKLIGHT,
+            "backlight": MCDU_BRIGHTNESS.BACKLIGHT,
+        }
+        def mk_button(b: list) -> Button:
+            b[3] = DREF_TYPE[b[3]]
+            b[4] = BUTTON_TYPE[b[4]]
+            if b[5] is not None and b[5].lower() != "none":
+                b[5] = BRIGHTNESS[b[5]]
+            return Button(*b)
+
         def strip_index(path):  # path[5] -> path
             return path.split("[")[0]
 
+        self.aircraft = MCDUAircraft(vendor="toliss", icao=self.icao)
+
         # Install buttons
-        self.buttons = [Button(*b) for b in MDCU_KEYS.get(self.icao)]
+        self.buttons = [mk_button(b) for b in self.aircraft.mapped_keys()]
         self._buttons_by_id = {b.id: b for b in self.buttons}
 
-        self.mcdu_units = MDCU_UNITS.get(self.icao)
+        self.mcdu_units = self.aircraft.mcdu_units
 
-        drefs1 = MCDU_DISPLAY_DATAREFS.get(self.icao)
-        drefs2 = MCDU_NO_DISPLAY_DATAREFS.get(self.icao)
-        drefs_display = set([self.set_mcdu_unit(d[0]) for d in drefs1])
-        drefs_no_display = set([self.set_mcdu_unit(d[0]) for d in drefs2])
+        drefs1 = self.aircraft.required_datarefs()
+        drefs2 = [d for d in self.aircraft.datarefs() if d not in drefs1]
+        drefs_display = set([self.set_mcdu_unit(d) for d in drefs1])
+        drefs_no_display = set([self.set_mcdu_unit(d) for d in drefs2])
         self.required_datarefs = set([strip_index(d) for d in drefs_display])
-        paths = drefs_display | drefs_no_display
-        self.register_datarefs(paths=paths)
-        logger.debug(f"registered {len(paths)} datarefs for {self.set_mcdu_unit('MCDU1')}, {len(self.required_datarefs)} required")
-
-        # TO DO
+        self._loaded_datarefs = drefs_display | drefs_no_display
+        self.register_datarefs(paths=self._loaded_datarefs)
+        logger.debug(f"registered {len(self._loaded_datarefs)} datarefs for {self.set_mcdu_unit('MCDU1')}, {len(self.required_datarefs)} required")
         self.display.set_display_datarefs(dataref_list=self.required_datarefs, mcdu_units=self.mcdu_units)
+
+    def unload_datarefs(self):
+        self.unregister_datarefs(paths=list(self._loaded_datarefs))
 
     def get_dataref_value(self, path: str) -> int | float | str | None:
         """Returns the value of a single dataref"""
@@ -204,8 +229,8 @@ class MCDU(WinwingDevice):
         logger.debug("terminating..")
         self.device.set_callback(None)
         self.api.disconnect()
+        self.display.stop_update()
         self.device.stop()
-        self.stop()
         logger.debug("..terminated")
 
     def set_mcdu_unit(self, str_in: str):
@@ -274,9 +299,12 @@ class MCDU(WinwingDevice):
             reqs = filter(lambda k: k in self.required_datarefs and drefs.get(k) is not None, drefs.keys())
             return len(list(reqs))
 
-        logger.debug("registering datarefs..")
-        self.load_datarefs()
-        logger.debug("..registered")
+        # logger.debug("registering datarefs..")
+        # self.load_datarefs()
+        # logger.debug("..registered")
+        logger.debug("loading aircraft data..")
+        self.load_aircraft()
+        logger.debug("..aircraft loaded")
         self.status = MCDU_STATUS.WAITING_FOR_DATA
         sleep(2)  # give a chance for data to arrive, 2.0 secs sufficient on medium computer
         expected = len(self.required_datarefs)
@@ -375,12 +403,7 @@ class MCDU(WinwingDevice):
         # To do:
         # 1. Unregister current unit datarefs
         self.device.set_led(led=MCDU_ANNUNCIATORS.STATUS, on=True)
-        drefs1 = MCDU_DISPLAY_DATAREFS.get(self.icao)
-        drefs2 = MCDU_NO_DISPLAY_DATAREFS.get(self.icao)
-        drefs_display = set([self.set_mcdu_unit(d[0]) for d in drefs1])
-        drefs_no_display = set([self.set_mcdu_unit(d[0]) for d in drefs2])
-        paths = drefs_display | drefs_no_display
-        self.unregister_datarefs(paths=list(paths))
+        self.unload_datarefs()
         # 2. Change unit id
         self.device.set_unit(MCDU_DEVICE_MASKS.FO if self.device.mcdu_unit & MCDU_DEVICE_MASKS.CAP else MCDU_DEVICE_MASKS.CAP)
         # 3. Register new unit datarefs and wait for data
@@ -393,12 +416,7 @@ class MCDU(WinwingDevice):
         # To do:
         # 1. Unregister current unit datarefs
         self.device.set_led(led=MCDU_ANNUNCIATORS.STATUS, on=True)
-        drefs1 = MCDU_DISPLAY_DATAREFS.get(self.icao)
-        drefs2 = MCDU_NO_DISPLAY_DATAREFS.get(self.icao)
-        drefs_display = set([self.set_mcdu_unit(d[0]) for d in drefs1])
-        drefs_no_display = set([self.set_mcdu_unit(d[0]) for d in drefs2])
-        paths = drefs_display | drefs_no_display
-        self.unregister_datarefs(paths=list(paths))
+        self.unload_datarefs()
         # 2. Change aircraft
         self.wait_for_toliss_airbus()
         # 3. Load new aircraft datarefs and wait for data
@@ -639,7 +657,7 @@ class MCDUDisplay:
             return
 
         if mcdu_unit not in self.mcdu_units:
-            logger.warning(f"invalid MCDU unit {mcdu_unit}")
+            logger.warning(f"invalid MCDU unit {mcdu_unit} ({self.mcdu_units})")
             return
 
         if "title" in dataref:
@@ -679,6 +697,9 @@ class MCDUDisplay:
                 self._updated.clear()  # we clear first since an update may come while we refresh the display
                 self.show_page()
         logger.info("display updater terminated")
+
+    def stop_update(self):
+        self.update_event.set()
 
     def combine(self, l1, l2):
         line = []

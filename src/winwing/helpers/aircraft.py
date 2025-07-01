@@ -1,25 +1,44 @@
 """
 """
+import os
+import logging
 
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Set
 
-from pywinwing.device import WinwingDevice
-from pywinwing.helpers import XPAPI
+from ruamel.yaml import YAML
+
+from winwing.devices.winwing import WinwingDevice
+
+logger = logging.getLogger(__name__)
+# logger.setLevel(logging.DEBUG)
+
+yaml = YAML(typ="safe", pure=True)
 
 
 class Aircraft(ABC):
 
-    def __init__(self, icao: str) -> None:
+    def __init__(self, vendor: str, icao: str, variant: str | None = None) -> None:
+        self.vendor = vendor
         self.icao = icao
+        self.variant = variant
         self._config = None
 
-    def load(self, filename):
-        with open(filename, "r") as fp:
-            self._config = fp.read()
+    def config_filename(self, prefix: str, extension: str = ".yaml"):
+        d = os.path.dirname(__file__)
+        fn = f"{prefix}_{self.vendor}_{self.icao}"
+        if self.variant is not None:
+            fn = fn + f"_{self.variant}"
+        fn = os.path.join(d, "..", "assets", fn + extension)
+        logger.debug(f"loaded {os.path.abspath(fn)}")
+        return os.path.abspath(fn)
 
-    @abstractmethod
-    def display_datarefs(self) -> List[str]:
+    def load(self, prefix: str):
+        fn = self.config_filename(prefix=prefix)
+        with open(fn, "r") as fp:
+            self._config = yaml.load(fp)
+
+    def required_datarefs(self) -> Set[str]:
         """Returns datarefs necessary to drive entire display content
 
         Returns
@@ -28,11 +47,10 @@ class Aircraft(ABC):
 
 
         """
-        datarefs = []
-        return datarefs
+        datarefs = self._config.get("display-datarefs", [])
+        return set(datarefs)
 
-    @abstractmethod
-    def other_datarefs(self) -> List[str]:
+    def datarefs(self) -> Set[str]:
         """Returns accessoriy datarefs for other purposes
 
         Returns
@@ -41,10 +59,10 @@ class Aircraft(ABC):
 
 
         """
-        datarefs = []
-        return datarefs
+        datarefs = self._config.get("display-datarefs", [])
+        datarefs.extend(self._config.get("datarefs", []))
+        return set(datarefs)
 
-    @abstractmethod
     def mapped_keys(self) -> Dict[str, Any]:
         """Returns key ampping.
 
@@ -55,10 +73,10 @@ class Aircraft(ABC):
             Dict[str, Any]: {key: data} for key, with data necessary to carry over actions when key pressed/released
 
         """
-        keys = {}
+        keys = self._config.get("keys", {})
         return keys
 
-    def init(self, device: WinwingDevice, api: XPAPI) -> bool:
+    def init(self, device: WinwingDevice) -> bool:
         """Convenience function that can be used to adjust aircraft properties
            depending on device and/or API used
 

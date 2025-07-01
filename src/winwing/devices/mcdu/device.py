@@ -55,7 +55,7 @@ class MCDUDevice:
             if self.vendor_id == d["vid"] and self.product_id == d["pid"]:
                 mcdu_unit |= d["mask"]
                 logger.debug(f"MCDU unit {mcdu_unit}")
-                return  mcdu_unit
+                return mcdu_unit
         logger.warning("MCDU unit not found")
         return mcdu_unit
 

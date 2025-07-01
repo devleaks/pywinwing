@@ -1,4 +1,6 @@
-acf-icao: A339
+vendor: toliss
+icao: A339
+# variant: none
 mcdu-units: [1, 2]
 keys:
     # [index, label, dataref, dataref_type, button_type, led]
@@ -77,8 +79,8 @@ keys:
     - [72, OVERFLY, AirbusFBW/MCDU1KeyOverfly, command, press, none]
     - [73, Clear, AirbusFBW/MCDU1KeyClear, command, press, none]
     # Non existant buttons
-    - [74, LCDBright1, AirbusFBW/DUBrightness[6], data, none, screen_backlight]
-    - [75, LCDBright2, AirbusFBW/DUBrightness[7], data, none, screen_backlight]
+    - [74, LCDBright1, "AirbusFBW/DUBrightness[6]", data, none, screen_backlight]
+    - [75, LCDBright2, "AirbusFBW/DUBrightness[7]", data, none, screen_backlight]
     - [76, Backlight, AirbusFBW/PanelBrightnessLevel, data, none, backlight]
 display-datarefs:
     - AirbusFBW/MCDU1cont1a

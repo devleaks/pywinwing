@@ -40,6 +40,7 @@ if args.list:
             pprint.pprint(device)
     os._exit(0)
 
+
 def main():
     if args.verbose:
         print(f"options {args}")
@@ -50,9 +51,12 @@ def main():
     api = ws_api(host=host, port=port)
 
     winwing_devices = DeviceManager.enumerate()
-    for winwing_device in winwing_devices:
-        winwing_device.set_api(api)
-        winwing_device.run()
+    if len(winwing_devices) > 0:
+        for winwing_device in winwing_devices:
+            winwing_device.set_api(api)
+            winwing_device.run()
+    else:
+        print(f"no Winwing device detected")
 
 
 if __name__ == "__main__":
