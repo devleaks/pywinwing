@@ -1,8 +1,11 @@
 """
 """
+import re
 from typing import List
 
 from winwing.helpers.aircraft import Aircraft
+
+MCDU_DISPLAY_DATA = "AirbusFBW/MCDU(?P<unit>[1-3]+)(?P<name>(title|stitle|label|cont|scont|sp)+)(?P<line>[1-6]*)(?P<large>[L]*)(?P<color>[abgmswy]+)"
 
 
 class MCDUAircraft(Aircraft):
@@ -14,3 +17,6 @@ class MCDUAircraft(Aircraft):
     @property
     def mcdu_units(self) -> List[int]:
         return self._config.get("mcdu-units", [])
+
+    def is_display_dataref(self, dataref: str) -> bool:
+        return re.match(MCDU_DISPLAY_DATA, dataref) is not None

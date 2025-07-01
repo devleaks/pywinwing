@@ -12,7 +12,7 @@ from datetime import datetime
 from xpwebapi import CALLBACK_TYPE, Dataref, Command
 
 from ..winwing import WinwingDevice
-from .aircraft import MCDUAircraft
+from .aircraft import MCDUAircraft, MCDU_DISPLAY_DATA
 
 from .device import MCDUDevice, MCDU_DEVICE_MASKS
 from .constant import (
@@ -43,7 +43,6 @@ version = "0.6.0"
 @dataclass
 class Button:
     """Wrapper class around a MCDU key"""
-
     id: int
     label: str
     dataref: str | None = None
@@ -53,14 +52,12 @@ class Button:
 
 
 class MCDU_STATUS(IntEnum):
+    """Global MCDU adapter status"""
     NOT_RUNNING = 0
     CONNECTED = 1
     AIRBUS_DETECTED = 2
     WAITING_FOR_DATA = 3
     RUNNING = 9
-
-
-MCDU_DISPLAY_DATA = "AirbusFBW/MCDU(?P<unit>[1-3]+)(?P<name>(title|stitle|label|cont|scont|sp)+)(?P<line>[1-6]*)(?P<large>[L]*)(?P<color>[abgmswy]+)"
 
 
 class MCDU(WinwingDevice):
@@ -305,7 +302,11 @@ class MCDU(WinwingDevice):
         logger.debug("loading aircraft data..")
         self.load_aircraft()
         logger.debug("..aircraft loaded")
+        if not self._ready:
+            self.display.waiting_for_data()
         self.status = MCDU_STATUS.WAITING_FOR_DATA
+        self.device.set_led(led=MCDU_ANNUNCIATORS.STATUS, on=False)
+        self.device.set_unit_led()
         sleep(2)  # give a chance for data to arrive, 2.0 secs sufficient on medium computer
         expected = len(self.required_datarefs)
         cnt = data_count()
@@ -316,7 +317,7 @@ class MCDU(WinwingDevice):
                 sleep(2)
                 cnt = data_count()
             logger.info(f"MCDU {expected} data received")
-        self.device.set_led(led=MCDU_ANNUNCIATORS.STATUS, on=False)
+        self.device.set_unit_led(on=False)
         self.device.set_led(led=MCDU_ANNUNCIATORS.RDY, on=True)
         # turn off RDY two seconds later, RDY is used in CPLDC messaging
         timer = threading.Timer(2.0, self.device.set_led, args=(MCDU_ANNUNCIATORS.RDY, False))
@@ -362,8 +363,7 @@ class MCDU(WinwingDevice):
                 self.set_brightness(dataref, value)
                 logger.debug(f"set brightness: {dataref}={value}")
         # MCDU text datarefs
-        m = re.match(MCDU_DISPLAY_DATA, dataref)
-        if m is None:
+        if self.aircraft is not None and not self.aircraft.is_display_dataref(dataref):
             logger.debug(f"not a display dataref {dataref}")
             return
         self.display.variable_changed(dataref=dataref, value=value)
@@ -402,9 +402,10 @@ class MCDU(WinwingDevice):
     def change_mcdu_unit(self) -> int:
         # To do:
         # 1. Unregister current unit datarefs
-        self.device.set_led(led=MCDU_ANNUNCIATORS.STATUS, on=True)
+        self.device.set_unit_led()
         self.unload_datarefs()
         # 2. Change unit id
+        self.device.set_unit_led(on=False)
         self.device.set_unit(MCDU_DEVICE_MASKS.FO if self.device.mcdu_unit & MCDU_DEVICE_MASKS.CAP else MCDU_DEVICE_MASKS.CAP)
         # 3. Register new unit datarefs and wait for data
         self.wait_for_data()
@@ -602,6 +603,20 @@ class MCDUDisplay:
         self.write_line_to_page(13, 1, "/winwing_toliss_mcdu", MCDU_COLOR.DEFAULT.value, True)
 
         self.write_line_to_page(8, 1, "waiting for X-Plane...", "A")
+
+        self.device.display_page(page=self.page)
+
+    def waiting_for_data(self):
+        self.device.clear()
+        self.clear_page()
+        self.write_line_to_page(0, 5, "Winwing  MCDU", MCDU_COLOR.DEFAULT.value)
+        self.write_line_to_page(1, 5, "ToLiss Airbus", MCDU_COLOR.DEFAULT.value)
+        self.write_line_to_page(2, 6, "for X-Plane", MCDU_COLOR.DEFAULT.value)
+        self.write_line_to_page(4, 5, f"version {version}", "G", True)
+        self.write_line_to_page(12, 2, "github.com/devleaks", MCDU_COLOR.DEFAULT.value, True)
+        self.write_line_to_page(13, 1, "/winwing_toliss_mcdu", MCDU_COLOR.DEFAULT.value, True)
+
+        self.write_line_to_page(8, 2, "waiting for data...", "A")
 
         self.device.display_page(page=self.page)
 

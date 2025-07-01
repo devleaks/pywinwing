@@ -5,6 +5,7 @@ import time
 from typing import Tuple
 
 import hid
+from winwing.devices import mcdu
 
 from .constant import (
     MCDU_ANNUNCIATORS,
@@ -62,7 +63,6 @@ class MCDUDevice:
     def init(self):
         for s in MCDU_INIT_SEQUENCE(background_color=[0x00, 0x00, 0x00]):
             self.device.write(bytes(s))
-        self.set_unit_led()
 
     @property
     def mcdu_unit_id(self) -> int:
@@ -76,15 +76,14 @@ class MCDUDevice:
 
     def set_unit(self, unit: MCDU_DEVICE_MASKS):
         self.mcdu_unit = MCDU_DEVICE_MASKS.MCDU | unit
-        self.set_unit_led()
 
-    def set_unit_led(self):
-        self.set_led(led=MCDU_ANNUNCIATORS.FM1, on=False)
-        self.set_led(led=MCDU_ANNUNCIATORS.FM2, on=False)
+    def set_unit_led(self, on: bool = True):
+        # self.set_led(led=MCDU_ANNUNCIATORS.FM1, on=False)
+        # self.set_led(led=MCDU_ANNUNCIATORS.FM2, on=False)
         if self.mcdu_unit & MCDU_DEVICE_MASKS.FO:
-            self.set_led(led=MCDU_ANNUNCIATORS.FM2, on=True)
+            self.set_led(led=MCDU_ANNUNCIATORS.FM2, on=on)
             return
-        self.set_led(led=MCDU_ANNUNCIATORS.FM1, on=True)
+        self.set_led(led=MCDU_ANNUNCIATORS.FM1, on=on)
 
     def read(self, size: int, milliseconds: int) -> bytes:
         return self.device.read(size, milliseconds)
