@@ -71,6 +71,12 @@ if args.list:
 def main():
     if args.verbose:
         print(f"options {args}")
+
+    winwing_devices = DeviceManager.enumerate()
+    if len(winwing_devices) == 0:
+        print("no Winwing device detected")
+        return
+
     probe = None
     api = None
 
@@ -86,17 +92,20 @@ def main():
             print(f"api at {host}:{port}")
         api = ws_api(host=host, port=port)
 
-    winwing_devices = DeviceManager.enumerate()
-    if len(winwing_devices) > 0:
+    try:
         for winwing_device in winwing_devices:
             winwing_device.set_api(api)
             if args.aircraft is not None:
                 winwing_device.set_aircraft_configuration(args.aircraft[0])
 
             winwing_device.run()
-    else:
-        print(f"no Winwing device detected")
-
+    except KeyboardInterrupt:
+        for winwing_device in winwing_devices:
+            winwing_device.terminate()
+        if api is not None:
+            api.disconnect()
+        if probe is not None:
+            probe.stop_monitor()
 
 if __name__ == "__main__":
     main()

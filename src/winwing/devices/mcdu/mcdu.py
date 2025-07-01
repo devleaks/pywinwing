@@ -354,7 +354,7 @@ class MCDU(WinwingDevice):
         if cnt != expected:
             self.status = MCDU_STATUS.WAITING_FOR_DATA
             while cnt != expected:
-                if warning_count <= MAX_WARNING_COUNT:
+                if warning_count <= MAX_WARNING_COUNT or warning_count % 30 == 0:
                     last_warning = " (last warning)" if warning_count == MAX_WARNING_COUNT else ""
                     logger.warning(f"waiting for MCDU data ({cnt}/{expected}){last_warning}")
                 warning_count = warning_count + 1
