@@ -36,8 +36,8 @@ from .constant import (
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-version = "0.7.3"
 
+# When repetitive warnings, only show first ones:
 MAX_WARNING_COUNT = 3
 
 
@@ -48,6 +48,9 @@ class MCDU(WinwingDevice):
     Connect to X-Plane and monitor MCDU datarefs. Update MCDU appearance accordingly.
 
     """
+
+    WINWING_PRODUCT_IDS = [47926]
+    VERSION = "0.7.3"
 
     def __init__(self, vendor_id: int, product_id: int, **kwargs):
         WinwingDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
@@ -684,7 +687,7 @@ class MCDUDisplay:
         center_line(0, "Winwing  MCDU", MCDU_COLOR.DEFAULT.value)
         center_line(1, "ToLiss Airbus", MCDU_COLOR.DEFAULT.value)
         center_line(2, "for X-Plane", MCDU_COLOR.DEFAULT.value)
-        center_line(4, f"VERSION {version}", MCDU_COLOR.CYAN.value, True)
+        center_line(4, f"VERSION {MCDU.VERSION}", MCDU_COLOR.CYAN.value, True)
 
         center_line(8, message, MCDU_COLOR.AMBER.value)
 

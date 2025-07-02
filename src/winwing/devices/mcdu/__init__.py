@@ -1,1 +1,1 @@
-from .mcdu import MCDU, version
+from .mcdu import MCDU

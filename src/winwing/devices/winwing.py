@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 
 class WinwingDevice(ABC):
 
+    WINWING_VENDOR_IDS = [16536]
+
     def __init__(self, vendor_id: int, product_id: int):
         self.vendor_id = vendor_id
         self.product_id = product_id

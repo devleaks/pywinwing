@@ -1,15 +1,14 @@
 """
 """
-
 import os
 import logging
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import List, Dict, Any, Set
 
 from ruamel.yaml import YAML
 
-from winwing.devices.winwing import WinwingDevice
+from winwing.devices import WinwingDevice
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
