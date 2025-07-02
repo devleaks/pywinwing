@@ -210,3 +210,7 @@ class MCDUDevice:
         if len(self._last_read) > 20:
             return self._last_read[17], self._last_read[19]
         return 0, 0
+
+    def terminate(self):
+        self.stop()
+        self.device.close()

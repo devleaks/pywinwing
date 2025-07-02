@@ -3,7 +3,6 @@ import io
 import logging
 import threading
 import re
-from types import new_class
 from typing import Dict, List
 from time import sleep
 from datetime import datetime
@@ -34,7 +33,7 @@ from .constant import (
 )
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
 
 
 # When repetitive warnings, only show first ones:
@@ -246,14 +245,20 @@ class MCDU(WinwingDevice):
 
     def terminate(self):
         logger.debug("terminating..")
+        # stop receiving actions from devices
         self.device.set_callback(None)
+        # ask to stop sending dataref updates
         self.unregister_all_datarefs()
+        # disconnect api
         self.api.disconnect()
+        # stop display update loop
         self.display.stop_update()
+        # clear screen
         self.device.clear()
+        # turn off all annunciator
         for a in MCDU_ANNUNCIATORS:
             self.set_annunciator(annunciator=a, on=False)
-        self.device.stop()
+        self.device.terminate()
         logger.debug("..terminated")
 
     def set_mcdu_unit(self, str_in: str):
