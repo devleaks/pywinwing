@@ -1,0 +1,1 @@
+from .datmpl import DeviceAdapterTemplate

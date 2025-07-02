@@ -9,6 +9,8 @@ from typing import List
 
 import hid
 
+# Important: The following loads all known devices from devices.__init__.py.
+# All devices should be loaded in that module.
 import winwing.devices as WW
 
 logger = logging.getLogger(__name__)
@@ -17,13 +19,23 @@ logger = logging.getLogger(__name__)
 
 class DeviceManager:
     """
-    Central device manager, to enumerate any attached Winwing devices. An
-    instance of this class must be created in order to detect and use any
-    StreamDeck devices.
+    Central device manager, to enumerate any attached Winwing devices,
+    and device adapters available.
     """
 
     @staticmethod
     def new(vendor_id: int, product_id: int) -> WW.WinwingDevice | None:
+        """Create device adapter for supplied (vendor, product)
+
+        If no device adapter can be found, returns None
+
+        Args:
+            vendor_id (int): HID vendor identifier (2 bytes)
+            product_id (int): HID product identifier (2 bytes) for above vendor
+
+        Returns:
+            [WinwingDevice]: Device adapter
+        """
 
         adapters = DeviceManager.adapters()
         logger.debug(f"adapters {adapters}")
@@ -42,10 +54,10 @@ class DeviceManager:
     @staticmethod
     def enumerate() -> List[WW.WinwingDevice]:
         """
-        Detect attached StreamDeck devices.
+        Detect attached Winwing devices.
 
-        :rtype: list(StreamDeck)
-        :return: list of :class:`StreamDeck` instances, one for each detected device.
+        :rtype: list(WinwingDevice)
+        :return: list of :class:`WinwingDevice` instances, one for each detected device.
         """
         devices = []
         for dev in hid.enumerate():
@@ -55,12 +67,12 @@ class DeviceManager:
 
     @staticmethod
     def adapters() -> list:
-        """Returns the list of all subclasses.
+        """Returns the list of all subclasses of WinwingDevice.
 
         Recurses through all sub-sub classes
 
         Returns:
-            [list]: list of all subclasses
+            [list]: list of all WinwingDevice subclasses
 
         Raises:
             ValueError: If invalid class found in recursion (types, etc.)
@@ -79,4 +91,3 @@ class DeviceManager:
             except (TypeError, AttributeError):
                 continue
         return list(subclasses)
-
