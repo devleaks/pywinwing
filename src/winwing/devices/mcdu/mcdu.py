@@ -19,7 +19,7 @@ from .constant import (
     Button,
     AIRCRAFT_DATAREFS,
     ICAO_DATAREF,
-    VENDOR_DATAREF,
+    AUTHOR_DATAREF,
     VALID_ICAO_AIRCRAFTS,
     MCDU_ANNUNCIATORS,
     MCDU_BRIGHTNESS,
@@ -68,12 +68,12 @@ class MCDU(WinwingDevice):
         self.required_datarefs = []
         self.mcdu_units = set()
 
-        self.vendor = ""
+        self.author = ""
         self.icao = ""
         self.variant: str | None = None
 
         self.new_icao = None
-        self.new_vendor = None
+        self.new_author = None
 
         self.buttons = []
         self._buttons_by_id = {}
@@ -160,13 +160,13 @@ class MCDU(WinwingDevice):
 
         logger.debug("loading aircraft..")
         if not self.aircraft_forced:
-            self.aircraft = MCDUAircraft(vendor=self.vendor, icao=self.icao, variant=self.variant)
+            self.aircraft = MCDUAircraft(author=self.author, icao=self.icao, variant=self.variant)
         else:
             self.aircraft = self.aircraft_from_configuration_file()
             if self.aircraft is None:
                 logger.error(f"cannot load aircraft from configuration file {self.aircraft_config}")
             else:  # transfer data acf -> mcdu
-                self.vendor = self.aircraft.vendor
+                self.author = self.aircraft.author
                 self.icao = self.aircraft.icao
                 self.variant = self.aircraft.variant
 
@@ -294,6 +294,8 @@ class MCDU(WinwingDevice):
         self._reads = self._reads + 1
 
     def wait_for_xplane(self):
+        """Wait for X-Plane API reachability
+        """
         self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.FAIL, on=False)
         self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.RDY, on=False)
         self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.STATUS, on=False)
@@ -312,12 +314,15 @@ class MCDU(WinwingDevice):
         self.status = MCDU_STATUS.CONNECTED
 
     def wait_for_aircraft(self):
-        # should check sim/aircraft/view/acf_author == GlidingKiwi
+        """Wait for value of both
+            - AUTHOR_DATAREF = "sim/aircraft/view/acf_author"
+            - ICAO_DATAREF = "sim/aircraft/view/acf_ICAO"
+        """
         self.register_datarefs(paths=AIRCRAFT_DATAREFS)
         if not self._ready:
             self.display.message("waiting for aircraft...")
         icao = self.get_dataref_value(ICAO_DATAREF)
-        vendor = self.get_dataref_value(VENDOR_DATAREF)
+        author = self.get_dataref_value(AUTHOR_DATAREF)
         warning_count = 0
         if icao == "" or icao not in VALID_ICAO_AIRCRAFTS:
             while icao == "" or icao not in VALID_ICAO_AIRCRAFTS:
@@ -327,18 +332,22 @@ class MCDU(WinwingDevice):
                 warning_count = warning_count + 1
                 sleep(2)
                 icao = self.get_dataref_value(ICAO_DATAREF)
-                vendor = self.get_dataref_value(VENDOR_DATAREF)
-            while vendor == "":
-                logger.warning("waiting for vendor")
+                author = self.get_dataref_value(AUTHOR_DATAREF)
+            while author == "":
+                logger.warning("waiting for author")
                 sleep(2)
-                vendor = self.get_dataref_value(VENDOR_DATAREF)
+                author = self.get_dataref_value(AUTHOR_DATAREF)
         self.icao = icao
-        self.vendor = vendor
-        logger.info(f"{self.vendor} {self.icao} detected")
+        self.author = author
+        logger.info(f"{self.author} {self.icao} detected")
         self.status = MCDU_STATUS.AIRCRAFT_DETECTED
         # no change to status lights, we still need the data
 
     def wait_for_data(self):
+        """Wait necessary data for display.
+
+        Registers the aircraft datarefs and wait for all "required" datarefs to have a value.
+        """
         def data_count():
             drefs = self.get_all_dataref_values()
             reqs = filter(lambda k: k in self.required_datarefs and drefs.get(k) is not None, drefs.keys())
@@ -350,6 +359,10 @@ class MCDU(WinwingDevice):
         logger.debug("loading aircraft data..")
         self.load_aircraft()
         logger.debug("..aircraft loaded")
+        if not self.aircraft.loaded:
+            self.display.message("no aircraft")
+            self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.FAIL, on=True)
+            return
         if not self._ready:
             self.display.message("waiting for data...")
         self.status = MCDU_STATUS.WAITING_FOR_DATA
@@ -393,19 +406,19 @@ class MCDU(WinwingDevice):
         d.value = value
 
         # Special datarefs for brightness control
-        if dataref == ICAO_DATAREF or dataref == VENDOR_DATAREF:
+        if dataref == ICAO_DATAREF or dataref == AUTHOR_DATAREF:
             if self.aircraft is not None:
                 if dataref == ICAO_DATAREF:
                     self.new_icao = value
                     logger.debug(f"got new icao: {dataref}={value}")
-                if dataref == VENDOR_DATAREF:
-                    self.new_vendor = value
-                    logger.debug(f"got new vendor: {dataref}={value}")
-                if self.new_icao is not None and self.new_vendor is not None:  # not thread safe
-                    logger.debug("got new icao and vendor, changing aircraft")
-                    self.change_aircraft(new_icao=self.new_icao, new_vendor=self.new_vendor)
+                if dataref == AUTHOR_DATAREF:
+                    self.new_author = value
+                    logger.debug(f"got new author: {dataref}={value}")
+                if self.new_icao is not None and self.new_author is not None:  # not thread safe
+                    logger.debug("got new icao and author, changing aircraft")
+                    self.change_aircraft(new_author=self.new_author, new_icao=self.new_icao)
                     self.new_icao = None
-                    self.new_vendor = None
+                    self.new_author = None
             # else, aircraft not loaded yet, will be loaded by wait_for_resources()
         if "Brightness" in dataref or "/anim" in dataref:
             if "DUBrightness" in dataref and value <= 1:
@@ -477,7 +490,7 @@ class MCDU(WinwingDevice):
         self.display._updated.set()
         return self.device.mcdu_unit_id
 
-    def change_aircraft(self, new_icao: str, new_vendor: str) -> str:
+    def change_aircraft(self, new_author: str, new_icao: str) -> str:
         # To do:
         if new_icao not in VALID_ICAO_AIRCRAFTS:
             logger.warning(f"{new_icao} not in list {','.join(VALID_ICAO_AIRCRAFTS)}")
@@ -490,7 +503,7 @@ class MCDU(WinwingDevice):
             logger.warning(f"stop and restart winwing-cli without custom aircraft configuration to handle current aircraft {new_icao}")
             return self.icao
 
-        if new_icao == self.icao and new_vendor == self.vendor:
+        if new_icao == self.icao and new_author == self.author:
             logger.debug("same aicraft, no need to change")
             return self.icao
 
@@ -499,7 +512,7 @@ class MCDU(WinwingDevice):
 
         # 2. Change aircraft
         self.unload_aircraft()
-        self.vendor = new_vendor
+        self.author = new_author
         self.icao = new_icao
 
         # 3. Load new aircraft datarefs and wait for data

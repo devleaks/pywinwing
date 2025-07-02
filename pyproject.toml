@@ -35,9 +35,9 @@ classifiers = [
 requires-python = ">=3.12"
 
 dependencies = [
+    "hid~=1.0", # https://github.com/apmorton/pyhidapi
+    "ruamel.yaml~=0.18",
     "xpwebapi @ git+https://github.com/devleaks/xplane-webapi.git",
-    "hid~=1.0" # https://github.com/apmorton/pyhidapi
-
 ]
 
 dynamic = [

@@ -1,4 +1,9 @@
+import logging
 from abc import ABC, abstractmethod
+
+
+logger = logging.getLogger(__name__)
+# logger.setLevel(logging.DEBUG)
 
 
 class WinwingDevice(ABC):
@@ -8,6 +13,17 @@ class WinwingDevice(ABC):
     def __init__(self, vendor_id: int, product_id: int):
         self.vendor_id = vendor_id
         self.product_id = product_id
+
+        # TO avoir idolating device driver specifics in a supplemental class
+        # this class can be used to declare the device:
+        #
+        # try:
+        #     self.device = hid.Device(vid=self.vendor_id, pid=self.product_id)
+        # except hid.HIDException:
+        #     logger.warning("could not open device", exc_info=True)
+        #     self.device = None
+        # logger.info("device connected")
+        #
 
     @abstractmethod
     def run(self):

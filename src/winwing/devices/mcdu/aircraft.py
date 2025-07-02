@@ -2,7 +2,7 @@
 """
 
 import re
-from typing import List
+from typing import Set
 
 from winwing.helpers.aircraft import Aircraft
 
@@ -11,13 +11,15 @@ MCDU_DISPLAY_DATA = "AirbusFBW/MCDU(?P<unit>[1-3]+)(?P<name>(title|stitle|label|
 
 class MCDUAircraft(Aircraft):
 
-    def __init__(self, vendor: str, icao: str, variant: str | None = None) -> None:
-        Aircraft.__init__(self, vendor=vendor, icao=icao, variant=variant)
+    def __init__(self, author: str, icao: str, variant: str | None = None) -> None:
+        Aircraft.__init__(self, author=author, icao=icao, variant=variant)
         self.load(prefix="MCDU")
 
     @property
-    def mcdu_units(self) -> List[int]:
-        return self._config.get("mcdu-units", [])
+    def mcdu_units(self) -> Set[int]:
+        if not self.loaded:
+            return set()
+        return set(self._config.get("mcdu-units", []))
 
     @staticmethod
     def is_display_dataref(dataref: str) -> bool:
