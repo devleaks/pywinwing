@@ -113,16 +113,6 @@ AUTHOR_DATAREF = "sim/aircraft/view/acf_author"
 ICAO_DATAREF = "sim/aircraft/view/acf_ICAO"
 AIRCRAFT_DATAREFS = [AUTHOR_DATAREF, ICAO_DATAREF]
 
-VALID_ICAO_AIRCRAFTS = {
-    "A321",
-    "A21N",
-    "A319",
-    "A320",
-    "A339",
-    "A359",
-}
-
-
 # List of datarefs without led connection to request
 # Text Dataref format:  <MCDU[1,2]><Line[title/label/cont/etc]><Linenumber[1...6]><Color[a,b,m,s,w,y]>.
 # We must read all 25 Bytes per dataref!

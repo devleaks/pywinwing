@@ -6,7 +6,7 @@ import glob
 import logging
 
 from abc import ABC
-from typing import List, Dict, Any, Set
+from typing import Tuple, Dict, Any, Set
 
 from ruamel.yaml import YAML
 
@@ -27,22 +27,43 @@ class Aircraft(ABC):
         self.variant = variant
         self._config = None
 
-        logger.info(f"available aircrafts: {', '.join(f'({a[1]}, {a[0]})' for a in Aircraft.list())}")
-
+    @staticmethod
+    def key(author: str, icao: str) -> str:
+        return f"{icao}::{author}"
 
     @staticmethod
-    def list():
-        aircrafts = []
+    def list() -> Dict[Tuple[str, str], Dict]:
+        aircrafts = {}
         path = os.path.join(os.path.dirname(__file__), "..", "assets")
         files = glob.glob(os.path.join(path, ACF_FILE_GLOB))
         for file in files:
-            with open(os.path.join(path, file), "r") as fp:
+            fn = os.path.join(path, file)
+            with open(fn, "r") as fp:
                 data = yaml.load(fp)
-                vendor = data.get("vendor")
-                icao = data.get("icao")
-                if vendor is not None and icao is not None:
-                    aircrafts.append((vendor, icao))
+                if type(data) is dict:
+                    author = data.get("author")
+                    icao = data.get("icao")
+                    if author is not None and icao is not None:
+                        data["__filename__"] = fn
+                        aircrafts[Aircraft.key(author=author, icao=icao)] = data
+
+        if len(aircrafts) > 0:
+            def rep(a):
+                return a.replace("::", " by ")
+            logger.info(f"aircraft configuration files provided for: {', '.join(f'{rep(a)}' for a in aircrafts)}")
+        else:
+            logger.warning("no available aircraft")
+
         return aircrafts
+
+    @classmethod
+    def load_from_data(cls, data):
+        a = cls(author=data.get("author"), icao=data.get("icao"))
+        a._config = data
+        v = data.get("variant")
+        if v is not None:
+            a.variant = v
+        return a
 
     @classmethod
     def load_from_file(cls, filename):
@@ -51,12 +72,7 @@ class Aircraft(ABC):
             return
         with open(filename, "r") as fp:
             config = yaml.load(fp)
-        a = cls(author=config.get("author"), icao=config.get("icao"))
-        a._config = config
-        v = config.get("variant")
-        if v is not None:
-            a.variant = v
-        return a
+        return Aircraft.load_from_data(data=config)
 
     @property
     def loaded(self) -> bool:

@@ -7,11 +7,12 @@ from typing import Dict, List
 from time import sleep
 from datetime import datetime
 
+from winwing.helpers import aircraft
 from xpwebapi import CALLBACK_TYPE, Dataref, Command
 
+from winwing.helpers.aircraft import Aircraft
 from ..winwing import WinwingDevice
 from .aircraft import MCDUAircraft, MCDU_DISPLAY_DATA
-
 from .device import MCDUDevice, MCDU_DEVICE_MASKS
 from .constant import (
     ButtonType,
@@ -20,7 +21,6 @@ from .constant import (
     AIRCRAFT_DATAREFS,
     ICAO_DATAREF,
     AUTHOR_DATAREF,
-    VALID_ICAO_AIRCRAFTS,
     MCDU_ANNUNCIATORS,
     MCDU_BRIGHTNESS,
     MCDU_TERM_COLORS,
@@ -60,6 +60,8 @@ class MCDU(WinwingDevice):
 
         # self.api = ws_api(host=kwargs.get("host", "127.0.0.1"), port=kwargs.get("port", "8086"))
         self.api = None  # ws_api(host="192.168.1.140", port="8080")
+
+        self.VALID_AIRCRAFTS = Aircraft.list()
         self.aircraft = None
         self.aircraft_config = None
         self._datarefs = {}
@@ -149,9 +151,11 @@ class MCDU(WinwingDevice):
         }
 
         def mk_button(b: list) -> Button:
-            b[3] = DREF_TYPE[b[3]]
-            b[4] = BUTTON_TYPE[b[4]]
-            if b[5] is not None and b[5].lower() != "none":
+            if type(b[3]) is str:
+                b[3] = DREF_TYPE[b[3]]
+            if type(b[4]) is str:
+                b[4] = BUTTON_TYPE[b[4]]
+            if type(b[5]) is str and b[5].lower() != "none":
                 b[5] = BRIGHTNESS[b[5]]
             return Button(*b)
 
@@ -160,7 +164,9 @@ class MCDU(WinwingDevice):
 
         logger.debug("loading aircraft..")
         if not self.aircraft_forced:
-            self.aircraft = MCDUAircraft(author=self.author, icao=self.icao, variant=self.variant)
+            # self.aircraft = MCDUAircraft(author=self.author, icao=self.icao, variant=self.variant)
+            key = Aircraft.key(author=self.author, icao=self.icao)
+            self.aircraft = MCDUAircraft.load_from_data(data=self.VALID_AIRCRAFTS[key])
         else:
             self.aircraft = self.aircraft_from_configuration_file()
             if self.aircraft is None:
@@ -323,25 +329,36 @@ class MCDU(WinwingDevice):
             self.display.message("waiting for aircraft...")
         icao = self.get_dataref_value(ICAO_DATAREF)
         author = self.get_dataref_value(AUTHOR_DATAREF)
+        key =  Aircraft.key(author=author, icao=icao)
         warning_count = 0
-        if icao == "" or icao not in VALID_ICAO_AIRCRAFTS:
-            while icao == "" or icao not in VALID_ICAO_AIRCRAFTS:
+        if key not in self.VALID_AIRCRAFTS:
+            while key not in self.VALID_AIRCRAFTS:
                 if warning_count <= MAX_WARNING_COUNT:
                     last_warning = " (last warning)" if warning_count == MAX_WARNING_COUNT else ""
-                    logger.warning(f"waiting for valid aircraft (current {icao} not in list {','.join(VALID_ICAO_AIRCRAFTS)}){last_warning}")
+                    logger.warning(f"waiting for valid aircraft (current ({key}) not in list {self.VALID_AIRCRAFTS.keys()}{last_warning}")
                 warning_count = warning_count + 1
                 sleep(2)
                 icao = self.get_dataref_value(ICAO_DATAREF)
                 author = self.get_dataref_value(AUTHOR_DATAREF)
-            while author == "":
-                logger.warning("waiting for author")
-                sleep(2)
-                author = self.get_dataref_value(AUTHOR_DATAREF)
+                key = Aircraft.key(author=author, icao=icao)
         self.icao = icao
         self.author = author
         logger.info(f"{self.author} {self.icao} detected")
         self.status = MCDU_STATUS.AIRCRAFT_DETECTED
         # no change to status lights, we still need the data
+
+    def wait_for_metadata(self):
+        warning_count = 0
+        if not self.api.has_data:
+            while not self.api.has_data:
+                self.api.reload_caches(force=True)
+                if not self.api.has_data:
+                    if warning_count <= MAX_WARNING_COUNT:
+                        last_warning = " (last warning)" if warning_count == MAX_WARNING_COUNT else ""
+                        logger.warning(f"waiting for api metadata{last_warning}")
+                    warning_count = warning_count + 1
+                    sleep(2)
+        logger.info("api metadata cached")
 
     def wait_for_data(self):
         """Wait necessary data for display.
@@ -353,6 +370,8 @@ class MCDU(WinwingDevice):
             reqs = filter(lambda k: k in self.required_datarefs and drefs.get(k) is not None, drefs.keys())
             return len(list(reqs))
 
+        ## Wait for API dataref meta data in cache?
+        self.wait_for_metadata()
         # logger.debug("registering datarefs..")
         # self.load_datarefs()
         # logger.debug("..registered")
@@ -492,8 +511,9 @@ class MCDU(WinwingDevice):
 
     def change_aircraft(self, new_author: str, new_icao: str) -> str:
         # To do:
-        if new_icao not in VALID_ICAO_AIRCRAFTS:
-            logger.warning(f"{new_icao} not in list {','.join(VALID_ICAO_AIRCRAFTS)}")
+        valid_icao_aircrafts = [a[:a.index("::")] for a in self.VALID_AIRCRAFTS]
+        if new_icao not in valid_icao_aircrafts:
+            logger.warning(f"{new_icao} not in list {','.join(valid_icao_aircrafts)}")
             logger.warning(f"aircraft discrepency MCDU aircraft {self.icao} vs X-Plane aircraft {new_icao}")
             return self.icao
 
@@ -789,12 +809,14 @@ class MCDUDisplay:
         self._updated.set()
 
     def update(self):
-        logger.info("display updater started")
+        """Queueing mechanism to prevent concurrent updates
+        """
+        logger.debug("display updater started")
         while not self.update_event.is_set():
             if self._updated.wait(1):
                 self._updated.clear()  # we clear first since an update may come while we refresh the display
                 self.show_page()
-        logger.info("display updater terminated")
+        logger.debug("display updater terminated")
 
     def stop_update(self):
         self.update_event.set()
