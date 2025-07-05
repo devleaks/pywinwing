@@ -1,0 +1,113 @@
+author: Alex Unruh, Rodrigo Fernandez, Massimo Durando, Jim Gregory, Marco Auer
+icao: A333
+# variant: none
+mcdu-units: [1, 2]
+keys:
+    # [index, label, dataref, dataref_type, button_type, led]
+    - [0, LSK1L, sim/FMS/ls_1l, command, press, none]
+    - [1, LSK2L, sim/FMS/ls_2l, command, press, none]
+    - [2, LSK3L, sim/FMS/ls_3l, command, press, none]
+    - [3, LSK4L, sim/FMS/ls_4l, command, press, none]
+    - [4, LSK5L, sim/FMS/ls_5l, command, press, none]
+    - [5, LSK6L, sim/FMS/ls_6l, command, press, none]
+    - [6, LSK1R, sim/FMS/ls_1r, command, press, none]
+    - [7, LSK2R, sim/FMS/ls_2r, command, press, none]
+    - [8, LSK3R, sim/FMS/ls_3r, command, press, none]
+    - [9, LSK4R, sim/FMS/ls_4r, command, press, none]
+    - [10, LSK5R, sim/FMS/ls_5r, command, press, none]
+    - [11, LSK6R, sim/FMS/ls_6r, command, press, none]  # 0x800
+    - [12, DIRTO, sim/FMS/dir_intc, command, press, none]
+    - [13, PROG, sim/FMS/prog, command, press, none]
+    - [14, PERF, sim/FMS/perf, command, press, none]
+    - [15, INIT, sim/FMS/index, command, press, none]
+    - [16, DATA, sim/FMS/data, command, press, none]
+    - [17, MENU1, none, command, press, none]  # 17 emtpy, map to open ICSC screen
+    - [18, BRT, laminar/A333/buttons/fms1_brightness_up, command, press, none]
+    - [19, FPLN, sim/FMS/fpln, command, press, none]
+    - [20, RADNAV, sim/FMS/navrad, command, press, none]
+    - [21, FUEL, sim/FMS/fuel_pred, command, press, none]
+    - [22, SEC-FPLN, none, command, press, none]
+    - [23, ATC, none, command, press, none]
+    - [24, MENU, sim/FMS/menu, command, press, none]
+    - [25, DIM, laminar/A333/buttons/fms1_brightness_dn, command, press, none]
+    - [26, AIRPORT, sim/FMS/airport, command, press, none]
+    - [27, MENU2, none, command, press, none]  # 27 empty, map to switch MCDU
+    - [28, SLEW_LEFT, sim/FMS/prev, command, press, none]
+    - [29, SLEW_UP, sim/FMS/up, command, press, none]
+    - [30, SLEW_RIGHT, sim/FMS/next, command, press, none]
+    - [31, SLEW_DOWN, sim/FMS/down, command, press, none]
+    - [32, KEY1, sim/FMS/key_1, command, press, none]
+    - [33, KEY2, sim/FMS/key_2, command, press, none]
+    - [34, KEY3, sim/FMS/key_3, command, press, none]
+    - [35, KEY4, sim/FMS/key_4, command, press, none]
+    - [36, KEY5, sim/FMS/key_5, command, press, none]
+    - [37, KEY6, sim/FMS/key_6, command, press, none]
+    - [38, KEY7, sim/FMS/key_7, command, press, none]
+    - [39, KEY8, sim/FMS/key_8, command, press, none]
+    - [40, KEY9, sim/FMS/key_9, command, press, none]
+    - [41, DOT, sim/FMS/key_period, command, press, none]
+    - [42, KEY0, sim/FMS/key_0, command, press, none]
+    - [43, PLUSMINUS, sim/FMS/key_minus, command, press, none]
+    - [44, KEYA, sim/FMS/key_A, command, press, none]
+    - [45, KEYB, sim/FMS/key_B, command, press, none]
+    - [46, KEYC, sim/FMS/key_C, command, press, none]
+    - [47, KEYD, sim/FMS/key_D, command, press, none]
+    - [48, KEYE, sim/FMS/key_E, command, press, none]
+    - [49, KEYF, sim/FMS/key_F, command, press, none]
+    - [50, KEYG, sim/FMS/key_G, command, press, none]
+    - [51, KEYH, sim/FMS/key_H, command, press, none]
+    - [52, KEYI, sim/FMS/key_I, command, press, none]
+    - [53, KEYJ, sim/FMS/key_J, command, press, none]
+    - [54, KEYK, sim/FMS/key_K, command, press, none]
+    - [55, KEYL, sim/FMS/key_L, command, press, none]
+    - [56, KEYM, sim/FMS/key_M, command, press, none]
+    - [57, KEYN, sim/FMS/key_N, command, press, none]
+    - [58, KEYO, sim/FMS/key_O, command, press, none]
+    - [59, KEYP, sim/FMS/key_P, command, press, none]
+    - [60, KEYQ, sim/FMS/key_Q, command, press, none]
+    - [61, KEYR, sim/FMS/key_R, command, press, none]
+    - [62, KEYS, sim/FMS/key_S, command, press, none]
+    - [63, KEYT, sim/FMS/key_T, command, press, none]
+    - [64, KEYU, sim/FMS/key_U, command, press, none]
+    - [65, KEYV, sim/FMS/key_V, command, press, none]
+    - [66, KEYW, sim/FMS/key_W, command, press, none]
+    - [67, KEYX, sim/FMS/key_X, command, press, none]
+    - [68, KEYY, sim/FMS/key_Y, command, press, none]
+    - [69, KEYZ, sim/FMS/key_Z, command, press, none]
+    - [70, SLASH, sim/FMS/key_slash, command, press, none]
+    - [71, SPACE, sim/FMS/key_space, command, press, none]
+    - [72, OVERFLY, sim/FMS/key_overfly, command, press, none]
+    - [73, Clear, clear, command, press, none]
+    # Non existant buttons
+display-datarefs:
+    - sim/cockpit2/radios/indicators/fms_cdu1_text_line0
+    - sim/cockpit2/radios/indicators/fms_cdu1_text_line1
+    - sim/cockpit2/radios/indicators/fms_cdu1_text_line2
+    - sim/cockpit2/radios/indicators/fms_cdu1_text_line3
+    - sim/cockpit2/radios/indicators/fms_cdu1_text_line4
+    - sim/cockpit2/radios/indicators/fms_cdu1_text_line5
+    - sim/cockpit2/radios/indicators/fms_cdu1_text_line6
+    - sim/cockpit2/radios/indicators/fms_cdu1_text_line7
+    - sim/cockpit2/radios/indicators/fms_cdu1_text_line8
+    - sim/cockpit2/radios/indicators/fms_cdu1_text_line9
+    - sim/cockpit2/radios/indicators/fms_cdu1_text_line10
+    - sim/cockpit2/radios/indicators/fms_cdu1_text_line11
+    - sim/cockpit2/radios/indicators/fms_cdu1_text_line12
+    - sim/cockpit2/radios/indicators/fms_cdu1_text_line13
+    - sim/cockpit2/radios/indicators/fms_cdu1_style_line0
+    - sim/cockpit2/radios/indicators/fms_cdu1_style_line1
+    - sim/cockpit2/radios/indicators/fms_cdu1_style_line2
+    - sim/cockpit2/radios/indicators/fms_cdu1_style_line3
+    - sim/cockpit2/radios/indicators/fms_cdu1_style_line4
+    - sim/cockpit2/radios/indicators/fms_cdu1_style_line5
+    - sim/cockpit2/radios/indicators/fms_cdu1_style_line6
+    - sim/cockpit2/radios/indicators/fms_cdu1_style_line7
+    - sim/cockpit2/radios/indicators/fms_cdu1_style_line8
+    - sim/cockpit2/radios/indicators/fms_cdu1_style_line9
+    - sim/cockpit2/radios/indicators/fms_cdu1_style_line10
+    - sim/cockpit2/radios/indicators/fms_cdu1_style_line11
+    - sim/cockpit2/radios/indicators/fms_cdu1_style_line12
+    - sim/cockpit2/radios/indicators/fms_cdu1_style_line13
+datarefs:
+    - sim/cockpit2/switches/instrument_brightness_ratio[13]
+    - sim/cockpit2/switches/instrument_brightness_ratio[6]

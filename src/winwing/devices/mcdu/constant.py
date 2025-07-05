@@ -55,6 +55,7 @@ class MCDU_COLORS(Enum):
     SPECIAL = "s"
     WHITE = "w"
     YELLOW = "y"
+    BLACK = "k"
 
 
 COLOR_MAP = {

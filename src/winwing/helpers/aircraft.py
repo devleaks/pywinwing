@@ -17,9 +17,12 @@ logger = logging.getLogger(__name__)
 
 yaml = YAML(typ="safe", pure=True)
 
-ACF_FILE_GLOB = "*.yaml"
+ACF_FILE_GLOB = "*.yaml"  # include .yml file if necessary
+
 
 class Aircraft(ABC):
+
+    AIRCRAFT_KEYS = []
 
     def __init__(self, author: str, icao: str, variant: str | None = None) -> None:
         self.author = author
@@ -30,6 +33,43 @@ class Aircraft(ABC):
     @staticmethod
     def key(author: str, icao: str) -> str:
         return f"{icao}::{author}"
+
+    @staticmethod
+    def new(author: str, icao: str):
+        """Create aircraft for supplied (author, icao)
+
+        If no device aircraft can be found, returns None
+
+        Args:
+            author (str): Author of aircraft
+            icao (str): Aircraft ICAO
+
+        Returns:
+            [Aircraft]: Aircraft adapter
+        """
+
+        adapters = Aircraft.adapters()
+        print(adapters)
+        key = Aircraft.key(author=author, icao=icao)
+        reqacf = list(filter(lambda x: key in x.AIRCRAFT_KEYS, adapters))
+        logger.debug(f"aircraft adapters for {icao},{author}: {reqacf}")
+        if len(reqacf) == 0:
+            logger.warning(f"no aircraft adapter for {author}, {icao}")
+            return None
+        if len(reqacf) > 1:
+            logger.warning(f"More than one aircraft adapter for {author}, {icao}: {reqacf}")
+            return None
+        adapter = reqacf[0]
+        logger.info(f"aircraft adapter for {icao} by {author} is {adapter}")
+        aircraft = adapter(author=author, icao=icao)
+        aircrafts_data = Aircraft.list()
+        if key not in aircrafts_data:
+            logger.warning(f"no configuration data for {icao} by {author}")
+        else:
+            temp = aircrafts_data.get(key)
+            aircraft._config = temp
+            logger.info(f"configuration data set for {icao} by {author}")
+        return aircraft
 
     @staticmethod
     def list() -> Dict[Tuple[str, str], Dict]:
@@ -50,12 +90,38 @@ class Aircraft(ABC):
         if len(aircrafts) > 0:
             def rep(a):
                 return a.replace("::", " by ")
-            logger.info(f"aircraft configuration files provided for: {', '.join(f'{rep(a)}' for a in aircrafts)}")
+            logger.info(f"aircraft data provided for: {', '.join(f'{rep(a)}' for a in aircrafts)}")
         else:
             logger.warning("no available aircraft")
 
         return aircrafts
 
+    @staticmethod
+    def adapters() -> list:
+        """Returns the list of all subclasses of Aircraft.
+
+        Recurses through all sub-sub classes
+
+        Returns:
+            [list]: list of all Aircraft subclasses
+
+        Raises:
+            ValueError: If invalid class found in recursion (types, etc.)
+        """
+        subclasses = set()
+        stack = []
+        try:
+            stack.extend(Aircraft.__subclasses__())
+        except (TypeError, AttributeError) as ex:
+            raise ValueError("Invalid class" + repr(WW.WinwingDevice)) from ex
+        while stack:
+            sub = stack.pop()
+            subclasses.add(sub)
+            try:
+                stack.extend(s for s in sub.__subclasses__() if s not in subclasses)
+            except (TypeError, AttributeError):
+                continue
+        return list(subclasses)
     @classmethod
     def load_from_data(cls, data):
         a = cls(author=data.get("author"), icao=data.get("icao"))
@@ -78,6 +144,19 @@ class Aircraft(ABC):
     def loaded(self) -> bool:
         return self._config is not None
 
+    def init(self, device: WinwingDevice) -> bool:
+        """Convenience function that can be used to adjust aircraft properties
+           depending on device and/or API used
+
+        Args:
+            device (WinwingDevice): [description]
+            api (XPAPI): [description]
+
+        Returns:
+            bool: success of initialisation
+        """
+        return True
+
     def config_filename(self, prefix: str, extension: str = ".yaml"):
         d = os.path.dirname(__file__)
         fn = f"{prefix}_{self.author}_{self.icao}"
@@ -87,7 +166,7 @@ class Aircraft(ABC):
         logger.debug(f"loaded {os.path.abspath(fn)}")
         return os.path.abspath(fn)
 
-    def load(self, prefix: str):
+    def load(self, prefix: str = ""):
         fn = self.config_filename(prefix=prefix)
         if not os.path.exists(fn):
             logger.warning(f"aircraft file {fn} not found")
@@ -138,16 +217,3 @@ class Aircraft(ABC):
             return {}
         keys = self._config.get("keys", {})
         return keys
-
-    def init(self, device: WinwingDevice) -> bool:
-        """Convenience function that can be used to adjust aircraft properties
-           depending on device and/or API used
-
-        Args:
-            device (WinwingDevice): [description]
-            api (XPAPI): [description]
-
-        Returns:
-            bool: success of initialisation
-        """
-        return True

@@ -1,11 +1,11 @@
 import os
 import logging
+import re
 import threading
 import time
 from typing import Tuple
 
 import hid
-from winwing.devices import mcdu
 
 from .constant import (
     MCDU_ANNUNCIATORS,
@@ -26,6 +26,9 @@ WINWING_MCDU_DEVICES = [
     {"vid": 0x4098, "pid": 0xBB3E, "name": "MCDU - First Offizer", "mask": MCDU_DEVICE_MASKS.MCDU | MCDU_DEVICE_MASKS.FO},
     {"vid": 0x4098, "pid": 0xBB3A, "name": "MCDU - Observer", "mask": MCDU_DEVICE_MASKS.MCDU | MCDU_DEVICE_MASKS.OBS},
 ]
+
+
+XP_COLORS = ["K","C","R","Y","G","M","A","W"]  # 0..7, see https://developer.x-plane.com/article/datarefs-for-the-cdu-screen/
 
 
 class MCDUDevice:

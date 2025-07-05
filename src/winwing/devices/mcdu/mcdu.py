@@ -3,18 +3,22 @@ import io
 import logging
 import threading
 import re
+import base64
 from typing import Dict, List
 from time import sleep
 from datetime import datetime
 
+from winwing.devices import mcdu
 from winwing.helpers import aircraft
 from xpwebapi import CALLBACK_TYPE, Dataref, Command
 
 from winwing.helpers.aircraft import Aircraft
 from ..winwing import WinwingDevice
-from .aircraft import MCDUAircraft, MCDU_DISPLAY_DATA
 from .device import MCDUDevice, MCDU_DEVICE_MASKS
+from .acf_toliss import ToLissAircraft
+from .acf_laminar import LaminarAircraft
 from .constant import (
+    COLOR_MAP,
     ButtonType,
     DrefType,
     Button,
@@ -48,7 +52,7 @@ class MCDU(WinwingDevice):
 
     """
 
-    WINWING_PRODUCT_IDS = [47926]
+    WINWING_PRODUCT_IDS = [47926, 47930, 47934]
     VERSION = "0.7.3"
 
     def __init__(self, vendor_id: int, product_id: int, **kwargs):
@@ -164,9 +168,7 @@ class MCDU(WinwingDevice):
 
         logger.debug("loading aircraft..")
         if not self.aircraft_forced:
-            # self.aircraft = MCDUAircraft(author=self.author, icao=self.icao, variant=self.variant)
-            key = Aircraft.key(author=self.author, icao=self.icao)
-            self.aircraft = MCDUAircraft.load_from_data(data=self.VALID_AIRCRAFTS[key])
+            self.aircraft = Aircraft.new(author=self.author, icao=self.icao)
         else:
             self.aircraft = self.aircraft_from_configuration_file()
             if self.aircraft is None:
@@ -175,6 +177,8 @@ class MCDU(WinwingDevice):
                 self.author = self.aircraft.author
                 self.icao = self.aircraft.icao
                 self.variant = self.aircraft.variant
+
+        self.display.set_aircraft(self.aircraft)
 
         # Install buttons
         self.buttons = [mk_button(b) for b in self.aircraft.mapped_keys()]
@@ -459,7 +463,11 @@ class MCDU(WinwingDevice):
                 self.set_brightness(dataref, value)
                 logger.debug(f"set brightness: {dataref}={value}")
         # MCDU text datarefs
-        if not MCDUAircraft.is_display_dataref(dataref):
+        if self.aircraft is None:
+            logger.warning("no aircraft")
+            return
+
+        if not self.aircraft.is_display_dataref(dataref):
             logger.debug(f"not a display dataref {dataref}")
             return
         self.display.variable_changed(dataref=dataref, value=value)
@@ -688,6 +696,7 @@ class MCDUDisplay:
 
     def __init__(self, device):
         self.device = device
+        self.aircraft = None
         self.terminal = None  # MCDUColorTerminal()
 
         self.page = [[" " for _ in range(PAGE_BYTES_PER_LINE)] for _ in range(PAGE_LINES)]
@@ -695,13 +704,15 @@ class MCDUDisplay:
         self.mcdu_units = set()
         self.datarefs = {}
 
-        self.lines = {}
         self._all_ok = False
         self._last_display = datetime.now()
         self._updated = threading.Event()
         self.update_event = threading.Event()
         self.update_thread = threading.Thread(target=self.update, name="MCDU Screen Updater")
         self.update_thread.start()
+
+    def set_aircraft(self, aircraft: Aircraft):
+        self.aircraft = aircraft
 
     def set_display_datarefs(self, dataref_list: set, mcdu_units: set):
         self.required_datarefs = dataref_list
@@ -711,7 +722,8 @@ class MCDUDisplay:
         self.page = [[" " for _ in range(PAGE_BYTES_PER_LINE)] for _ in range(PAGE_LINES)]
 
     def clear_lines(self):
-        self.lines = {}
+        if self.aircraft is not None:
+            self.aircraft.clear_lines()
         self._all_ok = False
 
     def message(self, message):
@@ -763,37 +775,15 @@ class MCDUDisplay:
     def variable_changed(self, dataref: str, value):
         self.datarefs[dataref] = value
 
-        mcdu_unit = -1
-        try:
-            m = re.match(MCDU_DISPLAY_DATA, dataref)
-            if m is None:
-                logger.warning(f"not a display dataref {dataref}")
-                return
-            mcdu_unit = int(m["unit"])
-        except:
-            logger.warning(f"error invalid MCDU unit for {dataref}")
+        if self.aircraft is None:
+            logger.warning("no aircraft")
             return
 
-        if mcdu_unit not in self.mcdu_units:
-            logger.warning(f"invalid MCDU unit {mcdu_unit} ({self.mcdu_units})")
-            return
-
-        if "title" in dataref:
-            self.update_title(dataref=dataref, value=value, mcdu_unit=mcdu_unit)
-        elif "sp" in dataref:
-            self.update_sp(dataref, value, mcdu_unit=mcdu_unit)
-        else:
-            line = dataref[-2]
-            if line == "L":
-                line = dataref[-3]
-            if "label" in dataref:
-                self.update_label(dataref=dataref, value=value, mcdu_unit=mcdu_unit, line=line)
-            else:
-                self.update_line(dataref=dataref, value=value, mcdu_unit=mcdu_unit, line=line)
+        self.aircraft.variable_changed(dataref=dataref, value=value)
 
         # Processing completed
         # is this dataref related to the unit we are currently displaying?
-        if mcdu_unit != self.device.mcdu_unit_id:
+        if self.aircraft.get_mcdu_unit(dataref) != self.device.mcdu_unit_id:
             # logger.debug(f"{dataref} does not belong to unit on display ({mcdu_unit})")
             return
 
@@ -815,127 +805,16 @@ class MCDUDisplay:
         while not self.update_event.is_set():
             if self._updated.wait(1):
                 self._updated.clear()  # we clear first since an update may come while we refresh the display
-                self.show_page()
+                self.show_page()  # _laminar
         logger.debug("display updater terminated")
 
     def stop_update(self):
         self.update_event.set()
 
-    def combine(self, l1, l2):
-        line = []
-        for i in range(24):
-            if l1[i][0] == " ":
-                line.append(l2[i])
-                continue
-            # if l2[i][0] != " ":
-            #     logger.debug(f"2 chars {l1[i]} / {l2[i]}")
-            line.append(l1[i])
-        return line
-
-    def update_title(self, dataref: str, value, mcdu_unit: int):
-        lines = self.get_line_extra(mcdu_unit=mcdu_unit, what=["title", "stitle"], colors="bgwys")
-        self.lines[f"AirbusFBW/MCDU{mcdu_unit}title"] = self.combine(lines[0], lines[1])
-
-    def update_sp(self, dataref: str, value, mcdu_unit: int):
-        self.lines[f"AirbusFBW/MCDU{mcdu_unit}sp"] = self.get_line_extra(mcdu_unit=mcdu_unit, what=["sp"], colors="aw")[0]
-
-    def update_label(self, dataref: str, value, mcdu_unit: int, line: int):
-        self.lines[f"AirbusFBW/MCDU{mcdu_unit}label{line}"] = self.get_line(mcdu_unit=mcdu_unit, line=line, what=["label"], colors=MCDU_TERM_COLORS)[0]
-
-    def update_line(self, dataref: str, value, mcdu_unit: int, line: int):
-        lines = self.get_line(mcdu_unit=mcdu_unit, line=line, what=["cont", "scont"], colors=MCDU_TERM_COLORS)
-        self.lines[f"AirbusFBW/MCDU{mcdu_unit}cont{line}"] = self.combine(lines[0], lines[1])
-
-    def get_line_extra(self, mcdu_unit, what, colors):
-        lines = []
-        for code in what:
-            this_line = []
-            for c in range(24):
-                has_char = []
-                for color in colors:
-                    if code == "stitle" and color == "s":  # if code in ["stitle", "title"] and color == "s":
-                        continue
-                    name = f"AirbusFBW/MCDU{mcdu_unit}{code}{color}"
-                    v = self.datarefs.get(name)
-                    if v is None:
-                        # logger.debug(f"no value for dataref {name}")
-                        continue
-                    if c < len(v):
-                        if v[c] != " ":
-                            has_char.append((v[c], color))
-                if len(has_char) == 1:
-                    this_line = this_line + has_char
-                else:
-                    # if len(has_char) > 1:
-                    #     logger.debug(f"mutiple char {code}, {c}: {has_char}")
-                    this_line.append((" ", "w"))
-            lines.append(this_line)
-        return lines
-
-    def get_line(self, mcdu_unit: int, line: int, what: list, colors):
-        lines = []
-        for code in what:
-            this_line = []
-            for c in range(24):
-                has_char = []
-                for color in colors:
-                    if code.endswith("cont") and color.startswith("L"):
-                        continue
-                    name = f"AirbusFBW/MCDU{mcdu_unit}{code}{line}{color}"
-                    v = self.datarefs.get(name)
-                    if v is None:
-                        # logger.debug(f"no value for dataref {name}")
-                        continue
-                    if c < len(v):
-                        if v[c] != " ":
-                            has_char.append((v[c], color))
-                if len(has_char) == 1:
-                    this_line = this_line + has_char
-                else:
-                    # if len(has_char) > 1:
-                    #     logger.debug(f"mutiple char {code}, {c}: {has_char}")
-                    this_line.append((" ", "w"))
-            lines.append(this_line)
-        return lines
-
     def show_page(self):
-        def show_line(line, lnum, font_small):
-            pos = 0
-            for c in line:
-                if c[1] == "s":  # "special" characters (rev. eng.)
-                    if c[0] == "0":
-                        c = (chr(60), "b")
-                    elif c[0] == "1":
-                        c = (chr(62), "b")
-                    elif c[0] == "2":
-                        c = (chr(60), "w")
-                    elif c[0] == "3":
-                        c = (chr(62), "w")
-                    elif c[0] == "4":
-                        c = (chr(60), "a")
-                    elif c[0] == "5":
-                        c = (chr(62), "a")
-                    elif c[0] == "A":
-                        c = (chr(91), "b")
-                    elif c[0] == "B":
-                        c = (chr(93), "b")
-                    elif c[0] == "E":
-                        c = (chr(35), "a")
-                self.page[lnum][pos * PAGE_BYTES_PER_CHAR] = c[1]  # color
-                self.page[lnum][pos * PAGE_BYTES_PER_CHAR + 1] = font_small
-                self.page[lnum][pos * PAGE_BYTES_PER_CHAR + 2] = c[0]  # char
-                pos = pos + 1
+        self.page = self.aircraft.show_page(mcdu_unit=self.device.mcdu_unit_id)
 
-        logger.debug(f"page for mcdu unit {self.device.mcdu_unit_id}")
-
-        self.clear_page()
         vertslew_key = self.datarefs.get("AirbusFBW/MCDU1VertSlewKeys", 0)
-
-        show_line(self.lines[f"AirbusFBW/MCDU{self.device.mcdu_unit_id}title"], 0, 0)
-        for l in range(1, 7):
-            show_line(self.lines[f"AirbusFBW/MCDU{self.device.mcdu_unit_id}label{l}"], 2 * l - 1, 1)
-            show_line(self.lines[f"AirbusFBW/MCDU{self.device.mcdu_unit_id}cont{l}"], 2 * l, 0)
-        show_line(self.lines[f"AirbusFBW/MCDU{self.device.mcdu_unit_id}sp"], 13, 0)
 
         # display mcdu on winwing
         self.device.display_page(page=self.page, vertslew_key=vertslew_key)
