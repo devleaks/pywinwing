@@ -1,0 +1,219 @@
+author: GlidingKiwi
+icao: A339
+# variant: none
+mcdu-units: [1, 2]
+keys:
+    # [index, label, dataref, dataref_type, button_type, led]
+    - [0, LSK1L, AirbusFBW/MCDU1LSK1L, command, press, none]
+    - [1, LSK2L, AirbusFBW/MCDU1LSK2L, command, press, none]
+    - [2, LSK3L, AirbusFBW/MCDU1LSK3L, command, press, none]
+    - [3, LSK4L, AirbusFBW/MCDU1LSK4L, command, press, none]
+    - [4, LSK5L, AirbusFBW/MCDU1LSK5L, command, press, none]
+    - [5, LSK6L, AirbusFBW/MCDU1LSK6L, command, press, none]
+    - [6, LSK1R, AirbusFBW/MCDU1LSK1R, command, press, none]
+    - [7, LSK2R, AirbusFBW/MCDU1LSK2R, command, press, none]
+    - [8, LSK3R, AirbusFBW/MCDU1LSK3R, command, press, none]
+    - [9, LSK4R, AirbusFBW/MCDU1LSK4R, command, press, none]
+    - [10, LSK5R, AirbusFBW/MCDU1LSK5R, command, press, none]
+    - [11, LSK6R, AirbusFBW/MCDU1LSK6R, command, press, none]  # 0x800
+    - [12, DIRTO, AirbusFBW/MCDU1DirTo, command, press, none]
+    - [13, PROG, AirbusFBW/MCDU1Prog, command, press, none]
+    - [14, PERF, AirbusFBW/MCDU1Perf, command, press, none]
+    - [15, INIT, AirbusFBW/MCDU1Init, command, press, none]
+    - [16, DATA, AirbusFBW/MCDU1Data, command, press, none]
+    - [17, MENU1, toliss_airbus/iscs_open, command, press, none]  # 17 emtpy, map to open ICSC screen
+    - [18, BRT, AirbusFBW/MCDU1KeyBright, command, press, none]
+    - [19, FPLN, AirbusFBW/MCDU1Fpln, command, press, none]
+    - [20, RADNAV, AirbusFBW/MCDU1RadNav, command, press, none]
+    - [21, FUEL, AirbusFBW/MCDU1FuelPred, command, press, none]
+    - [22, SEC-FPLN, AirbusFBW/MCDU1SecFpln, command, press, none]
+    - [23, ATC, AirbusFBW/MCDU1ATC, command, press, none]
+    - [24, MENU, AirbusFBW/MCDU1Menu, command, press, none]
+    - [25, DIM, AirbusFBW/MCDU1KeyDim, command, press, none]
+    - [26, AIRPORT, AirbusFBW/MCDU1Airport, command, press, none]
+    - [27, MENU2, AirbusFBW/purser/fwd, command, press, none]  # 27 empty, map to switch MCDU
+    - [28, SLEW_LEFT, AirbusFBW/MCDU1SlewLeft, command, press, none]
+    - [29, SLEW_UP, AirbusFBW/MCDU1SlewUp, command, press, none]
+    - [30, SLEW_RIGHT, AirbusFBW/MCDU1SlewRight, command, press, none]
+    - [31, SLEW_DOWN, AirbusFBW/MCDU1SlewDown, command, press, none]
+    - [32, KEY1, AirbusFBW/MCDU1Key1, command, press, none]
+    - [33, KEY2, AirbusFBW/MCDU1Key2, command, press, none]
+    - [34, KEY3, AirbusFBW/MCDU1Key3, command, press, none]
+    - [35, KEY4, AirbusFBW/MCDU1Key4, command, press, none]
+    - [36, KEY5, AirbusFBW/MCDU1Key5, command, press, none]
+    - [37, KEY6, AirbusFBW/MCDU1Key6, command, press, none]
+    - [38, KEY7, AirbusFBW/MCDU1Key7, command, press, none]
+    - [39, KEY8, AirbusFBW/MCDU1Key8, command, press, none]
+    - [40, KEY9, AirbusFBW/MCDU1Key9, command, press, none]
+    - [41, DOT, AirbusFBW/MCDU1KeyDecimal, command, press, none]
+    - [42, KEY0, AirbusFBW/MCDU1Key0, command, press, none]
+    - [43, PLUSMINUS, AirbusFBW/MCDU1KeyPM, command, press, none]
+    - [44, KEYA, AirbusFBW/MCDU1KeyA, command, press, none]
+    - [45, KEYB, AirbusFBW/MCDU1KeyB, command, press, none]
+    - [46, KEYC, AirbusFBW/MCDU1KeyC, command, press, none]
+    - [47, KEYD, AirbusFBW/MCDU1KeyD, command, press, none]
+    - [48, KEYE, AirbusFBW/MCDU1KeyE, command, press, none]
+    - [49, KEYF, AirbusFBW/MCDU1KeyF, command, press, none]
+    - [50, KEYG, AirbusFBW/MCDU1KeyG, command, press, none]
+    - [51, KEYH, AirbusFBW/MCDU1KeyH, command, press, none]
+    - [52, KEYI, AirbusFBW/MCDU1KeyI, command, press, none]
+    - [53, KEYJ, AirbusFBW/MCDU1KeyJ, command, press, none]
+    - [54, KEYK, AirbusFBW/MCDU1KeyK, command, press, none]
+    - [55, KEYL, AirbusFBW/MCDU1KeyL, command, press, none]
+    - [56, KEYM, AirbusFBW/MCDU1KeyM, command, press, none]
+    - [57, KEYN, AirbusFBW/MCDU1KeyN, command, press, none]
+    - [58, KEYO, AirbusFBW/MCDU1KeyO, command, press, none]
+    - [59, KEYP, AirbusFBW/MCDU1KeyP, command, press, none]
+    - [60, KEYQ, AirbusFBW/MCDU1KeyQ, command, press, none]
+    - [61, KEYR, AirbusFBW/MCDU1KeyR, command, press, none]
+    - [62, KEYS, AirbusFBW/MCDU1KeyS, command, press, none]
+    - [63, KEYT, AirbusFBW/MCDU1KeyT, command, press, none]
+    - [64, KEYU, AirbusFBW/MCDU1KeyU, command, press, none]
+    - [65, KEYV, AirbusFBW/MCDU1KeyV, command, press, none]
+    - [66, KEYW, AirbusFBW/MCDU1KeyW, command, press, none]
+    - [67, KEYX, AirbusFBW/MCDU1KeyX, command, press, none]
+    - [68, KEYY, AirbusFBW/MCDU1KeyY, command, press, none]
+    - [69, KEYZ, AirbusFBW/MCDU1KeyZ, command, press, none]
+    - [70, SLASH, AirbusFBW/MCDU1KeySlash, command, press, none]
+    - [71, SPACE, AirbusFBW/MCDU1KeySpace, command, press, none]
+    - [72, OVERFLY, AirbusFBW/MCDU1KeyOverfly, command, press, none]
+    - [73, Clear, AirbusFBW/MCDU1KeyClear, command, press, none]
+    # Non existant buttons
+    - [74, LCDBright1, "AirbusFBW/DUBrightness[6]", data, none, screen_backlight]
+    - [75, LCDBright2, "AirbusFBW/DUBrightness[7]", data, none, screen_backlight]
+    - [76, Backlight, AirbusFBW/PanelBrightnessLevel, data, none, backlight]
+display-datarefs:
+    - AirbusFBW/MCDU1cont1a
+    - AirbusFBW/MCDU1cont1b
+    - AirbusFBW/MCDU1cont1g
+    - AirbusFBW/MCDU1cont1m
+    - AirbusFBW/MCDU1cont1s
+    - AirbusFBW/MCDU1cont1w
+    - AirbusFBW/MCDU1cont1y
+    - AirbusFBW/MCDU1cont2a
+    - AirbusFBW/MCDU1cont2b
+    - AirbusFBW/MCDU1cont2g
+    - AirbusFBW/MCDU1cont2m
+    - AirbusFBW/MCDU1cont2s
+    - AirbusFBW/MCDU1cont2w
+    - AirbusFBW/MCDU1cont2y
+    - AirbusFBW/MCDU1cont3a
+    - AirbusFBW/MCDU1cont3b
+    - AirbusFBW/MCDU1cont3g
+    - AirbusFBW/MCDU1cont3m
+    - AirbusFBW/MCDU1cont3s
+    - AirbusFBW/MCDU1cont3w
+    - AirbusFBW/MCDU1cont3y
+    - AirbusFBW/MCDU1cont4a
+    - AirbusFBW/MCDU1cont4b
+    - AirbusFBW/MCDU1cont4g
+    - AirbusFBW/MCDU1cont4s
+    - AirbusFBW/MCDU1cont4w
+    - AirbusFBW/MCDU1cont4y
+    - AirbusFBW/MCDU1cont5a
+    - AirbusFBW/MCDU1cont5b
+    - AirbusFBW/MCDU1cont5g
+    - AirbusFBW/MCDU1cont5s
+    - AirbusFBW/MCDU1cont5w
+    - AirbusFBW/MCDU1cont5y
+    - AirbusFBW/MCDU1cont6a
+    - AirbusFBW/MCDU1cont6b
+    - AirbusFBW/MCDU1cont6g
+    - AirbusFBW/MCDU1cont6m
+    - AirbusFBW/MCDU1cont6s
+    - AirbusFBW/MCDU1cont6w
+    - AirbusFBW/MCDU1cont6y
+    - AirbusFBW/MCDU1label1b
+    - AirbusFBW/MCDU1label1g
+    - AirbusFBW/MCDU1label1Lg
+    - AirbusFBW/MCDU1label1w
+    - AirbusFBW/MCDU1label2a
+    - AirbusFBW/MCDU1label2g
+    - AirbusFBW/MCDU1label2Lg
+    - AirbusFBW/MCDU1label2w
+    - AirbusFBW/MCDU1label3a
+    - AirbusFBW/MCDU1label3b
+    - AirbusFBW/MCDU1label3g
+    - AirbusFBW/MCDU1label3Lg
+    - AirbusFBW/MCDU1label3w
+    - AirbusFBW/MCDU1label4b
+    - AirbusFBW/MCDU1label4g
+    - AirbusFBW/MCDU1label4Lg
+    - AirbusFBW/MCDU1label4w
+    - AirbusFBW/MCDU1label5b
+    - AirbusFBW/MCDU1label5g
+    - AirbusFBW/MCDU1label5Lg
+    - AirbusFBW/MCDU1label5w
+    - AirbusFBW/MCDU1label6a
+    - AirbusFBW/MCDU1label6b
+    - AirbusFBW/MCDU1label6Lg
+    - AirbusFBW/MCDU1label6w
+    - AirbusFBW/MCDU1label6y
+    - AirbusFBW/MCDU1scont1a
+    - AirbusFBW/MCDU1scont1b
+    - AirbusFBW/MCDU1scont1g
+    - AirbusFBW/MCDU1scont1m
+    - AirbusFBW/MCDU1scont1w
+    - AirbusFBW/MCDU1scont1y
+    - AirbusFBW/MCDU1scont2a
+    - AirbusFBW/MCDU1scont2b
+    - AirbusFBW/MCDU1scont2g
+    - AirbusFBW/MCDU1scont2m
+    - AirbusFBW/MCDU1scont2w
+    - AirbusFBW/MCDU1scont2y
+    - AirbusFBW/MCDU1scont3a
+    - AirbusFBW/MCDU1scont3b
+    - AirbusFBW/MCDU1scont3g
+    - AirbusFBW/MCDU1scont3m
+    - AirbusFBW/MCDU1scont3w
+    - AirbusFBW/MCDU1scont3y
+    - AirbusFBW/MCDU1scont4a
+    - AirbusFBW/MCDU1scont4b
+    - AirbusFBW/MCDU1scont4g
+    - AirbusFBW/MCDU1scont4m
+    - AirbusFBW/MCDU1scont4w
+    - AirbusFBW/MCDU1scont4y
+    - AirbusFBW/MCDU1scont5a
+    - AirbusFBW/MCDU1scont5b
+    - AirbusFBW/MCDU1scont5g
+    - AirbusFBW/MCDU1scont5m
+    - AirbusFBW/MCDU1scont5w
+    - AirbusFBW/MCDU1scont6a
+    - AirbusFBW/MCDU1scont6b
+    - AirbusFBW/MCDU1scont6g
+    - AirbusFBW/MCDU1scont6m
+    - AirbusFBW/MCDU1scont6w
+    - AirbusFBW/MCDU1spw
+    - AirbusFBW/MCDU1stitlew
+    - AirbusFBW/MCDU1stitley
+    - AirbusFBW/MCDU1titleg
+    - AirbusFBW/MCDU1titles
+    - AirbusFBW/MCDU1titlew
+    - AirbusFBW/MCDU1spa
+    # AirbusFBW/MCDU1cont1c
+    # AirbusFBW/MCDU1cont2c
+    # AirbusFBW/MCDU1cont3c
+    # AirbusFBW/MCDU1cont4c
+    # AirbusFBW/MCDU1cont4m
+    # AirbusFBW/MCDU1cont5c
+    # AirbusFBW/MCDU1cont5m
+    # AirbusFBW/MCDU1cont6c
+    # AirbusFBW/MCDU1label1a
+    # AirbusFBW/MCDU1label1y
+    # AirbusFBW/MCDU1label2b
+    # AirbusFBW/MCDU1label2y
+    # AirbusFBW/MCDU1label3y
+    # AirbusFBW/MCDU1label4a
+    # AirbusFBW/MCDU1label4y
+    # AirbusFBW/MCDU1label5a
+    # AirbusFBW/MCDU1label5y
+    # AirbusFBW/MCDU1label6g
+    # AirbusFBW/MCDU1scont5y
+    # AirbusFBW/MCDU1scont6y
+    # AirbusFBW/MCDU1titleb
+    # AirbusFBW/MCDU1titley
+    - AirbusFBW/MCDU1VertSlewKeys
+datarefs:
+    - AirbusFBW/PanelBrightnessLevel
+    - AirbusFBW/DUBrightness[6]
+    - AirbusFBW/DUBrightness[7]
