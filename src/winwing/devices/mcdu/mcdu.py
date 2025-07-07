@@ -747,8 +747,7 @@ class MCDUDisplay:
         self.device.clear()
         self.clear_page()
         center_line(0, "Winwing  MCDU", MCDU_COLOR.DEFAULT.value)
-        center_line(1, "ToLiss Airbus", MCDU_COLOR.DEFAULT.value)
-        center_line(2, "for X-Plane", MCDU_COLOR.DEFAULT.value)
+        center_line(1, "for X-Plane", MCDU_COLOR.DEFAULT.value)
         center_line(4, f"VERSION {MCDU.VERSION}", MCDU_COLOR.CYAN.value, True)
 
         center_line(8, message, MCDU_COLOR.AMBER.value)
