@@ -5,8 +5,10 @@ import re
 from typing import Set
 
 from winwing.helpers.aircraft import Aircraft
+from .device import SPECIAL_CHARACTERS
 from .constant import (
     MCDU_TERM_COLORS,
+    PAGE_CHARS_PER_LINE,
     PAGE_LINES,
     PAGE_BYTES_PER_CHAR,
     PAGE_BYTES_PER_LINE,
@@ -80,6 +82,13 @@ class ToLissAircraft(Aircraft):
                 self.update_label(dataref=dataref, value=value, mcdu_unit=mcdu_unit, line=line)
             else:
                 self.update_line(dataref=dataref, value=value, mcdu_unit=mcdu_unit, line=line)
+
+    def encode_bytes(self, dataref, value) -> str | bytes:
+        try:
+            return value.decode("ascii").replace("\u0000", "")
+        except:
+            logger.warning(f"cannot decode bytes for {dataref.name} (encoding=ascii)", exc_info=True)
+        return value
 
     def combine(self, l1, l2):
         line = []
@@ -162,27 +171,30 @@ class ToLissAircraft(Aircraft):
         page = [[" " for _ in range(PAGE_BYTES_PER_LINE)] for _ in range(PAGE_LINES)]
 
         def show_line(line, lnum, font_small):
+            if line is None:
+                logger.warning(f"line {lnum} is empty, replacing by blank line")
+                line = [(" ", "w") for i in range(PAGE_CHARS_PER_LINE)]
             pos = 0
             for c in line:
                 if c[1] == "s":  # "special" characters (rev. eng.)
                     if c[0] == "0":
-                        c = (chr(60), "b")
+                        c = (chr(SPECIAL_CHARACTERS.ARROW_LEFT.value), "b")
                     elif c[0] == "1":
-                        c = (chr(62), "b")
+                        c = (chr(SPECIAL_CHARACTERS.ARROW_RIGHT.value), "b")
                     elif c[0] == "2":
-                        c = (chr(60), "w")
+                        c = (chr(SPECIAL_CHARACTERS.ARROW_LEFT.value), "w")
                     elif c[0] == "3":
-                        c = (chr(62), "w")
+                        c = (chr(SPECIAL_CHARACTERS.ARROW_RIGHT.value), "w")
                     elif c[0] == "4":
-                        c = (chr(60), "a")
+                        c = (chr(SPECIAL_CHARACTERS.ARROW_LEFT.value), "a")
                     elif c[0] == "5":
-                        c = (chr(62), "a")
+                        c = (chr(SPECIAL_CHARACTERS.ARROW_RIGHT.value), "a")
                     elif c[0] == "A":
-                        c = (chr(91), "b")
+                        c = (chr(SPECIAL_CHARACTERS.SQUARE_BRACKET_OPEN.value), "b")
                     elif c[0] == "B":
-                        c = (chr(93), "b")
+                        c = (chr(SPECIAL_CHARACTERS.SQUARE_BRACKET_CLOSE.value), "b")
                     elif c[0] == "E":
-                        c = (chr(35), "a")
+                        c = (chr(SPECIAL_CHARACTERS.BOX.value), "a")
                 page[lnum][pos * PAGE_BYTES_PER_CHAR] = c[1]  # color
                 page[lnum][pos * PAGE_BYTES_PER_CHAR + 1] = font_small
                 page[lnum][pos * PAGE_BYTES_PER_CHAR + 2] = c[0]  # char
@@ -190,10 +202,10 @@ class ToLissAircraft(Aircraft):
 
         logger.debug(f"page for mcdu unit {mcdu_unit}")
 
-        show_line(self.lines[f"AirbusFBW/MCDU{mcdu_unit}title"], 0, 0)
+        show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}title"), 0, 0)
         for l in range(1, 7):
-            show_line(self.lines[f"AirbusFBW/MCDU{mcdu_unit}label{l}"], 2 * l - 1, 1)
-            show_line(self.lines[f"AirbusFBW/MCDU{mcdu_unit}cont{l}"], 2 * l, 0)
-        show_line(self.lines[f"AirbusFBW/MCDU{mcdu_unit}sp"], 13, 0)
+            show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}label{l}"), 2 * l - 1, 1)
+            show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}cont{l}"), 2 * l, 0)
+        show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}sp"), 13, 0)
 
         return page

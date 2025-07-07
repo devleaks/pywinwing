@@ -3,14 +3,12 @@ import io
 import logging
 import threading
 import re
-import base64
 from typing import Dict, List
 from time import sleep
 from datetime import datetime
 
-from winwing.devices import mcdu
-from winwing.helpers import aircraft
-from xpwebapi import CALLBACK_TYPE, Dataref, Command
+from xpwebapi import CALLBACK_TYPE, DATAREF_DATATYPE, Dataref, Command
+import chardet
 
 from winwing.helpers.aircraft import Aircraft
 from ..winwing import WinwingDevice
@@ -18,7 +16,6 @@ from .device import MCDUDevice, MCDU_DEVICE_MASKS
 from .acf_toliss import ToLissAircraft
 from .acf_laminar import LaminarAircraft
 from .constant import (
-    COLOR_MAP,
     ButtonType,
     DrefType,
     Button,
@@ -53,7 +50,7 @@ class MCDU(WinwingDevice):
     """
 
     WINWING_PRODUCT_IDS = [47926, 47930, 47934]
-    VERSION = "0.7.3"
+    VERSION = "0.8.0"
 
     def __init__(self, vendor_id: int, product_id: int, **kwargs):
         WinwingDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
@@ -210,10 +207,16 @@ class MCDU(WinwingDevice):
     def unload_datarefs(self):
         self.unregister_datarefs(paths=list(self._loaded_datarefs))
 
-    def get_dataref_value(self, path: str) -> int | float | str | None:
+    def get_dataref_value(self, path: str, encoding: str = "ascii") -> int | float | str | None:
         """Returns the value of a single dataref"""
         d = self._datarefs.get(path)
-        return d.value if d is not None else None
+        value = d.value if d is not None else None
+        if type(value) is bytes and d.value_type == DATAREF_DATATYPE.DATA.value:
+            try:
+                value = value.decode(encoding=encoding).replace("\u0000", "")
+            except:
+                logger.warning(f"could not decode value {value} with encoding {encoding}", exc_info=True)
+        return value
 
     def get_all_dataref_values(self) -> Dict[str, int | float | str | None]:
         """Returns all registered datarefs and their values"""
@@ -288,12 +291,10 @@ class MCDU(WinwingDevice):
         large_button_mask = 0
         for i in range(12):
             large_button_mask |= data_in[i + 1] << (8 * i)
-        # if large_button_mask != 0:
-        #     print(f"{large_button_mask:b}", hex(large_button_mask))  # TEST2: you should see a difference when pressing buttons
+
         for i in range(len(self.buttons)):
             mask = 0x01 << i
             if xor_bitmask(large_button_mask, self._last_large_button_mask, mask):
-                # print(f"buttons: {format(large_button_mask, "#04x"):^14}")
                 if large_button_mask & mask:
                     self.do_key_press(i)
                 else:
@@ -331,15 +332,15 @@ class MCDU(WinwingDevice):
         self.register_datarefs(paths=AIRCRAFT_DATAREFS)
         if not self._ready:
             self.display.message("waiting for aircraft...")
-        icao = self.get_dataref_value(ICAO_DATAREF)
-        author = self.get_dataref_value(AUTHOR_DATAREF)
+        icao = self.get_dataref_value(path=ICAO_DATAREF)
+        author = self.get_dataref_value(path=AUTHOR_DATAREF)
         key =  Aircraft.key(author=author, icao=icao)
         warning_count = 0
         if key not in self.VALID_AIRCRAFTS:
             while key not in self.VALID_AIRCRAFTS:
                 if warning_count <= MAX_WARNING_COUNT:
                     last_warning = " (last warning)" if warning_count == MAX_WARNING_COUNT else ""
-                    logger.warning(f"waiting for valid aircraft (current ({key}) not in list {self.VALID_AIRCRAFTS.keys()}{last_warning}")
+                    logger.warning(f"waiting for valid aircraft (current {key} not in list {self.VALID_AIRCRAFTS.keys()}{last_warning}")
                 warning_count = warning_count + 1
                 sleep(2)
                 icao = self.get_dataref_value(ICAO_DATAREF)
@@ -408,7 +409,7 @@ class MCDU(WinwingDevice):
         self.set_unit_warning(on=False)
         self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.RDY, on=True)
         # turn off RDY two seconds later, RDY is used in CPLDC messaging
-        timer = threading.Timer(2.0, self.device.set_led, args=(MCDU_ANNUNCIATORS.RDY, False))
+        timer = threading.Timer(1.0, self.device.set_led, args=(MCDU_ANNUNCIATORS.RDY, False))
         timer.start()
 
     def wait_for_resources(self):
@@ -428,6 +429,17 @@ class MCDU(WinwingDevice):
             return
         d.value = value
 
+        # this is a string...
+        if type(value) is bytes:
+            if self.aircraft is not None:
+                value = self.aircraft.encode_bytes(dataref=d, value=value)
+            else:
+                enc = chardet.detect(value)
+                if enc["confidence"] > 0.2:
+                    value = value.decode(enc["encoding"]).replace("\u0000", "")
+                else:
+                    logger.warning(f"cannot decode bytes for {dataref} ({enc})")
+
         # Special datarefs for brightness control
         if dataref == ICAO_DATAREF or dataref == AUTHOR_DATAREF:
             if self.aircraft is not None:
@@ -443,6 +455,7 @@ class MCDU(WinwingDevice):
                     self.new_icao = None
                     self.new_author = None
             # else, aircraft not loaded yet, will be loaded by wait_for_resources()
+
         if "Brightness" in dataref or "/anim" in dataref:
             if "DUBrightness" in dataref and value <= 1:
                 # brightness is in 0..1, we need 0..255
@@ -462,6 +475,7 @@ class MCDU(WinwingDevice):
                 self.brightness[dataref] = value
                 self.set_brightness(dataref, value)
                 logger.debug(f"set brightness: {dataref}={value}")
+
         # MCDU text datarefs
         if self.aircraft is None:
             logger.warning("no aircraft")
@@ -608,12 +622,11 @@ class MCDUTerminal:
 
     """
 
-    def display(self, page: list, vertslew_key: int = 0):
+    def display(self, page: list):
         """Create display mock-up on terminal for page returns string.
 
         Args:
             page (list): Page content
-            vertslew_key (int): What slew keys to display on screen content (default: `0`)
 
         Returns:
             str: characters ready to display, include newlines.
@@ -651,12 +664,11 @@ class MCDUColorTerminal:
 
     """
 
-    def display_page(self, page: list, vertslew_key: int = 0):
+    def display_page(self, page: list):
         """Create display mock-up on terminal for page returns string.
 
         Args:
             page (list): Page content
-            vertslew_key (int): What slew keys to display on screen content (default: `0`)
 
         Returns:
             str: characters ready to display, include newlines.
@@ -762,8 +774,8 @@ class MCDUDisplay:
             self.page[line][pos + c * PAGE_BYTES_PER_CHAR + 1] = font_small
             self.page[line][pos + c * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1] = text[c]
 
-    def display(self, page: list | None = None, vertslew_key: int = 0):
-        self.device.display_page(page=self.page if page is None else page, vertslew_key=vertslew_key)
+    def display(self, page: list | None = None):
+        self.device.display_page(page=self.page if page is None else page)
 
     def all_datarefs_available_count(self) -> bool:
         avail_drefs = filter(lambda x: x in self.required_datarefs, self.datarefs)
@@ -814,12 +826,10 @@ class MCDUDisplay:
     def show_page(self):
         self.page = self.aircraft.show_page(mcdu_unit=self.device.mcdu_unit_id)
 
-        vertslew_key = self.datarefs.get("AirbusFBW/MCDU1VertSlewKeys", 0)
-
         # display mcdu on winwing
-        self.device.display_page(page=self.page, vertslew_key=vertslew_key)
+        self.device.display_page(page=self.page)
         if self.terminal is not None:
-            self.terminal.display_page(page=self.page, vertslew_key=vertslew_key)
+            self.terminal.display_page(page=self.page)
 
 
 # ##################

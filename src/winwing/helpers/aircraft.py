@@ -49,7 +49,6 @@ class Aircraft(ABC):
         """
 
         adapters = Aircraft.adapters()
-        print(adapters)
         key = Aircraft.key(author=author, icao=icao)
         reqacf = list(filter(lambda x: key in x.AIRCRAFT_KEYS, adapters))
         logger.debug(f"aircraft adapters for {icao},{author}: {reqacf}")

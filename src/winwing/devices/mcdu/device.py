@@ -1,8 +1,8 @@
 import os
 import logging
-import re
 import threading
 import time
+from enum import IntEnum
 from typing import Tuple
 
 import hid
@@ -29,6 +29,16 @@ WINWING_MCDU_DEVICES = [
 
 
 XP_COLORS = ["K","C","R","Y","G","M","A","W"]  # 0..7, see https://developer.x-plane.com/article/datarefs-for-the-cdu-screen/
+
+class SPECIAL_CHARACTERS(IntEnum):
+    ARROW_LEFT = 60
+    ARROW_UP = 61
+    ARROW_RIGHT = 62
+    ARROW_DOWN = 63
+    DEGREE = 176  #
+    SQUARE_BRACKET_OPEN = 91
+    SQUARE_BRACKET_CLOSE = 93
+    BOX = 35
 
 
 class MCDUDevice:
@@ -118,7 +128,7 @@ class MCDUDevice:
         for _ in range(16):
             self.device.write(bytes(blank_line))
 
-    def display_page(self, page: list, vertslew_key: int = 0):
+    def display_page(self, page: list):
         """[summary]
 
         A Page is a list of Line.
@@ -131,41 +141,78 @@ class MCDUDevice:
 
         Args:
             page (list): [description]
-            vertslew_key (int): [description] (default: `0`)
         """
         # Encore a page into a single buffer of 3 byte set.
         buf = []
         for i in range(PAGE_LINES):
             for j in range(PAGE_CHARS_PER_LINE):
+                # Style
                 color = page[i][j * PAGE_BYTES_PER_CHAR]
                 font_small = page[i][j * PAGE_BYTES_PER_CHAR + 1]
                 data_low, data_high = self._character_code(color, font_small)
+                if data_low > 255:
+                    logger.error(f"data_low: {page[i][j * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1]}, {color}, {font_small}, {i}, {j}")
+                if data_high > 255:
+                    logger.error(f"data_high: {page[i][j * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1]}, {color}, {font_small}, {i}, {j}")
                 buf.append(data_low)
                 buf.append(data_high)
+                # Character
                 val = ord(page[i][j * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1])
                 if val > 255:
-                    print("error", page[i][j * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1], val, i, j)
-                if val == 35:  # #
-                    buf.extend([0xE2, 0x98, 0x90])
-                elif val == 60:  # <
-                    buf.extend([0xE2, 0x86, 0x90])
-                elif val == 62:  # >
-                    buf.extend([0xE2, 0x86, 0x92])
-                elif val == 96:  # °
+                    logger.error(f"character: {page[i][j * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1]}, {val}, {i}, {j}")
+
+                if val == SPECIAL_CHARACTERS.DEGREE.value:  # °
                     buf.extend([0xC2, 0xB0])
-                # elif val == "A": # down arrow
-                #    buf.extend([0xe2, 0x86, 0x93])
-                # elif val == "ö": # up arrow
-                #    buf.extend([0xe2, 0x86, 0x91])
+                elif val == SPECIAL_CHARACTERS.BOX.value:  # #
+                    buf.extend([0xE2, 0x98, 0x90])
+                elif val == SPECIAL_CHARACTERS.ARROW_LEFT.value:  # <
+                    buf.extend([0xE2, 0x86, 0x90])
+                elif val == SPECIAL_CHARACTERS.ARROW_RIGHT.value:  # >
+                    buf.extend([0xE2, 0x86, 0x92])
+                elif val == SPECIAL_CHARACTERS.ARROW_DOWN.value: # down arrow
+                    buf.extend([0xE2, 0x86, 0x93])
+                elif val == SPECIAL_CHARACTERS.ARROW_UP.value: # up arrow
+                    buf.extend([0xE2, 0x86, 0x91])
                 else:
-                    if i == PAGE_LINES - 1 and j == PAGE_CHARS_PER_LINE - 2 and (vertslew_key == 1 or vertslew_key == 2):
-                        buf.extend([0xE2, 0x86, 0x91])
-                    elif i == PAGE_LINES - 1 and j == PAGE_CHARS_PER_LINE - 1 and (vertslew_key == 1 or vertslew_key == 3):
-                        buf.extend([0xE2, 0x86, 0x93])
-                    else:
-                        buf.append(val)
+                    buf.append(val)
 
         self.write_buffer(buffer=buf)
+
+        # # Handle special chars (ISO-8859-1)
+        # if(c == "ä"):
+        #     # left arrow
+        #     currChar = [0xe2, 0x86, 0x90]
+        # elif(c == "ö"):
+        #     # up arrow
+        #     currChar = [0xe2, 0x86, 0x91]
+        # elif(c == "ü"):
+        #     # right arrow
+        #     currChar = [0xe2, 0x86, 0x92]
+        # elif(c == "Ä"):
+        #     # down arrow
+        #     currChar = [0xe2, 0x86, 0x93]
+        # elif(c == "Ö"):
+        #     # degree circle
+        #     currChar = [0xc2, 0xb0]
+        # elif(c == "Ü"):
+        #     # open square
+        #     currChar = [0xe2, 0x98, 0x90]
+
+
+        #     if c[2] == chr(35):
+        #         c[2] = "☐"
+        #     elif c[2] == chr(60):
+        #         c[2] = "←"
+        #     elif c[2] == chr(62):
+        #         c[2] = "→"
+        #     elif c[2] == chr(91):
+        #         c[2] = "["
+        #     elif c[2] == chr(93):
+        #         c[2] = "]"
+        # if c[2] == "`":
+        #     c[2] = "°"
+
+
 
     def write_buffer(self, buffer: bytes):
         buf = buffer

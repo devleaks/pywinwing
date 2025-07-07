@@ -77,7 +77,7 @@ keys:
     - [70, SLASH, sim/FMS/key_slash, command, press, none]
     - [71, SPACE, sim/FMS/key_space, command, press, none]
     - [72, OVERFLY, sim/FMS/key_overfly, command, press, none]
-    - [73, Clear, clear, command, press, none]
+    - [73, Clear, sim/FMS/key_clear, command, press, none]
     # Non existant buttons
 display-datarefs:
     - sim/cockpit2/radios/indicators/fms_cdu1_text_line0
