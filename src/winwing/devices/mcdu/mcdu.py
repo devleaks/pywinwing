@@ -52,7 +52,7 @@ class MCDU(WinwingDevice):
     """
 
     WINWING_PRODUCT_IDS = [47926, 47930, 47934]
-    VERSION = "0.8.2"
+    VERSION = "0.8.3"
 
     def __init__(self, vendor_id: int, product_id: int, **kwargs):
         WinwingDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
@@ -132,18 +132,14 @@ class MCDU(WinwingDevice):
 
     def set_aircraft_configuration(self, filename):
         self.aircraft_config = filename
-        a = MCDUAircraft.load_from_file(filename=filename)
-        if a._config is not None:
-            logger.info(f"using aircraft configuration {filename}")
 
     def aircraft_from_configuration_file(self):
         logger.debug("..loading aircraft from configuration file..")
-        a = MCDUAircraft.load_from_file(filename=self.aircraft_config)
-        if a._config is not None:
-            logger.info(f"using aircraft configuration {self.aircraft_config}")
+        a = Aircraft.load_from_file(filename=self.aircraft_config)
+        if a is not None:
+            logger.info(f"using aircraft configuration {self.aircraft_config}, adapter {type(a)}")
             return a
-        else:
-            return None
+        return None
 
     def load_aircraft(self):
         DREF_TYPE = {"command": DrefType.CMD, "data": DrefType.DATA, "none": DrefType.NONE}
@@ -187,8 +183,8 @@ class MCDU(WinwingDevice):
 
         drefs1 = self.aircraft.required_datarefs()
         drefs2 = [d for d in self.aircraft.datarefs() if d not in drefs1]
-        drefs_display = set([self.aircraft.set_mcdu_unit(str_in=d, mcdu_unit=self.device.mcdu_unit) for d in drefs1])
-        drefs_no_display = set([self.aircraft.set_mcdu_unit(str_in=d, mcdu_unit=self.device.mcdu_unit) for d in drefs2])
+        drefs_display = set([self.aircraft.set_mcdu_unit(str_in=d, mcdu_unit=self.device.mcdu_unit_id) for d in drefs1])
+        drefs_no_display = set([self.aircraft.set_mcdu_unit(str_in=d, mcdu_unit=self.device.mcdu_unit_id) for d in drefs2])
         self.required_datarefs = set([strip_index(d) for d in drefs_display])
         self._loaded_datarefs = drefs_display | drefs_no_display
         self.register_datarefs(paths=self._loaded_datarefs)
@@ -324,6 +320,10 @@ class MCDU(WinwingDevice):
         - AUTHOR_DATAREF = "sim/aircraft/view/acf_author"
         - ICAO_DATAREF = "sim/aircraft/view/acf_ICAO"
         """
+        if self.aircraft_forced:
+            logger.info("aircraft from supplied configuration file")
+            self.status = MCDU_STATUS.AIRCRAFT_DETECTED
+            return
         self.register_datarefs(paths=AIRCRAFT_DATAREFS)
         if not self._ready:
             self.display.message("waiting for aircraft...")
@@ -488,7 +488,7 @@ class MCDU(WinwingDevice):
         if b is None:
             logger.warning(f"button id {key_id} not found")
             return
-        unit_dataref = self.aircraft.set_mcdu_unit(str_in=b.dataref, mcdu_unit=self.device.mcdu_unit)
+        unit_dataref = self.aircraft.set_mcdu_unit(str_in=b.dataref, mcdu_unit=self.device.mcdu_unit_id)
         logger.debug(f"button {b.label} pressed ({unit_dataref})")
         if b.type == ButtonType.TOGGLE:
             if b.label == "MENU2":  # special treatment to change MCDU unit
@@ -567,7 +567,7 @@ class MCDU(WinwingDevice):
             return
         if b.type == ButtonType.SWITCH:
             logger.debug(f"button {b.label} released")
-            unit_dataref = self.aircraft.set_mcdu_unit(str_in=b.dataref, mcdu_unit=self.device.mcdu_unit)
+            unit_dataref = self.aircraft.set_mcdu_unit(str_in=b.dataref, mcdu_unit=self.device.mcdu_unit_id)
             self.api.set_dataref_value(unit_dataref, 0)
             logger.debug(f"set dataref {unit_dataref} to 0")
 

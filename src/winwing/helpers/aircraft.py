@@ -126,21 +126,31 @@ class Aircraft(ABC):
 
     @classmethod
     def load_from_data(cls, data):
-        a = cls(author=data.get("author"), icao=data.get("icao"))
-        a._config = data
-        v = data.get("variant")
-        if v is not None:
-            a.variant = v
-        return a
+        author = data.get("author")
+        icao = data.get("icao")
+        a = Aircraft.new(author=author, icao=icao)
+        # If using a config file, aircraft will be found, but no data attached to it
+        # Data is added here.
+        if a is not None:
+            a._config = data
+            v = data.get("variant")
+            if v is not None:
+                a.variant = v
+            return a
+        logger.warning(f"cannot create aircraft for {icao}, {author}")
+        return None
 
     @classmethod
     def load_from_file(cls, filename):
         if not os.path.exists(filename):
             logger.error(f"aircraft file {filename} not found")
-            return
-        with open(filename, "r") as fp:
-            config = yaml.load(fp)
-        return Aircraft.load_from_data(data=config)
+            return None
+        try:
+            with open(filename, "r") as fp:
+                config = yaml.load(fp)
+            return Aircraft.load_from_data(data=config)
+        except:
+            logger.warning(f"cannot load aircraft configuration file {filename}")
 
     @property
     def loaded(self) -> bool:

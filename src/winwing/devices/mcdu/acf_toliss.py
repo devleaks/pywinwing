@@ -53,7 +53,11 @@ class ToLissAircraft(Aircraft):
     def get_mcdu_unit(self, dataref) -> int:
         mcdu_unit = -1
         try:
-            m = re.match(MCDU_DISPLAY_DATA, dataref)
+            m = None
+            if "VertSlewKeys" in dataref:
+                m = re.match("AirbusFBW/MCDU(?P<unit>[1-3]+)VertSlewKeys", dataref)
+            else:
+                m = re.match(MCDU_DISPLAY_DATA, dataref)
             if m is None:
                 logger.warning(f"not a display dataref {dataref}")
                 return -1
@@ -64,13 +68,6 @@ class ToLissAircraft(Aircraft):
         return mcdu_unit
 
     def set_mcdu_unit(self, str_in: str, mcdu_unit: int):
-        if mcdu_unit & MCDU_DEVICE_MASKS.FO:
-            return re.sub(r"MCDU[123]", "MCDU2", str_in)
-        elif mcdu_unit & MCDU_DEVICE_MASKS.OBS:
-            return re.sub(r"MCDU[123]", "MCDU3", str_in)
-        return str_in if "MCDU1" in str_in else re.sub(r"MCDU[123]", "MCDU1", str_in)
-
-    def set_mcdu_unit2(self, str_in: str, mcdu_unit: int):
         if mcdu_unit == 2:
             return re.sub(r"MCDU[123]", "MCDU2", str_in)
         elif mcdu_unit == 3:
@@ -231,8 +228,8 @@ class ToLissAircraft(Aircraft):
         show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}sp"), 13, 0)
 
         # Additional, non printed keys in lower right corner of display
-        vertslew_dref = self.set_mcdu_unit2(str_in="AirbusFBW/MCDU1VertSlewKeys", mcdu_unit=mcdu_unit)
-        vertslew_key = self._datarefs.get(self.set_mcdu_unit2(str_in="AirbusFBW/MCDU1VertSlewKeys", mcdu_unit=mcdu_unit))
+        vertslew_dref = self.set_mcdu_unit(str_in="AirbusFBW/MCDU1VertSlewKeys", mcdu_unit=mcdu_unit)
+        vertslew_key = self._datarefs.get(self.set_mcdu_unit(str_in="AirbusFBW/MCDU1VertSlewKeys", mcdu_unit=mcdu_unit))
         if vertslew_key == 1 or vertslew_key == 2:
             c = (PAGE_CHARS_PER_LINE - 2) * PAGE_BYTES_PER_CHAR
             page[PAGE_LINES - 1][c] = "w"
