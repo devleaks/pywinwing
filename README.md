@@ -11,7 +11,7 @@ Devices supported by this script will
 It is advisable to create and use a dedicated python environment.
 
 ```sh
-pip install 'pywinwing @ git+https://github.com/devleaks/pywinwing.git'
+pip install 'winwing @ git+https://github.com/devleaks/pywinwing.git'
 ```
 
 
