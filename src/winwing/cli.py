@@ -8,6 +8,7 @@ import hid
 from xpwebapi import ws_api, beacon
 
 from winwing import version
+from winwing.devices import WinwingDevice
 from .device_manager import DeviceManager
 
 FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
@@ -56,13 +57,13 @@ if args.list:
     device_list = hid.enumerate()
     if len(device_list) > 0:
         for device in hid.enumerate():
-            if device["vendor_id"] in DeviceManager.WINWING_VENDOR_IDS:
+            if device["vendor_id"] in WinwingDevice.WINWING_VENDOR_IDS:
                 if first:
                     first = False
                 #     print(f"devices for vendor {device['manufacturer_string']} (id={device['vendor_id']})")
                 print_device(device)
         if first:
-            print(f"no hid device for vendor identifier(s) {', '.join([str(i) for i in DeviceManager.WINWING_VENDOR_IDS])}")
+            print(f"no hid device for vendor identifier(s) {', '.join([str(i) for i in WinwingDevice.WINWING_VENDOR_IDS])}")
     else:
         print("no hid device")
     os._exit(0)
