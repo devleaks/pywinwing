@@ -211,7 +211,7 @@ display-datarefs:
     # AirbusFBW/MCDU1scont6y
     # AirbusFBW/MCDU1titleb
     # AirbusFBW/MCDU1titley
-datarefs:
     - AirbusFBW/MCDU1VertSlewKeys
+datarefs:
     - AirbusFBW/DUBrightness[6]
     - AirbusFBW/DUBrightness[7]

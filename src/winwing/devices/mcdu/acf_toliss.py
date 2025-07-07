@@ -1,11 +1,13 @@
 """
 """
+
 import logging
 import re
 from typing import Set
 
+from winwing.devices import mcdu
 from winwing.helpers.aircraft import Aircraft
-from .device import SPECIAL_CHARACTERS
+from .device import SPECIAL_CHARACTERS, MCDU_DEVICE_MASKS
 from .constant import (
     MCDU_TERM_COLORS,
     PAGE_CHARS_PER_LINE,
@@ -44,6 +46,8 @@ class ToLissAircraft(Aircraft):
 
     @staticmethod
     def is_display_dataref(dataref: str) -> bool:
+        if "VertSlewKeys" in dataref:
+            return True
         return re.match(MCDU_DISPLAY_DATA, dataref) is not None
 
     def get_mcdu_unit(self, dataref) -> int:
@@ -58,6 +62,20 @@ class ToLissAircraft(Aircraft):
             logger.warning(f"error invalid MCDU unit for {dataref}")
             return -1
         return mcdu_unit
+
+    def set_mcdu_unit(self, str_in: str, mcdu_unit: int):
+        if mcdu_unit & MCDU_DEVICE_MASKS.FO:
+            return re.sub(r"MCDU[123]", "MCDU2", str_in)
+        elif mcdu_unit & MCDU_DEVICE_MASKS.OBS:
+            return re.sub(r"MCDU[123]", "MCDU3", str_in)
+        return str_in if "MCDU1" in str_in else re.sub(r"MCDU[123]", "MCDU1", str_in)
+
+    def set_mcdu_unit2(self, str_in: str, mcdu_unit: int):
+        if mcdu_unit == 2:
+            return re.sub(r"MCDU[123]", "MCDU2", str_in)
+        elif mcdu_unit == 3:
+            return re.sub(r"MCDU[123]", "MCDU3", str_in)
+        return str_in if "MCDU1" in str_in else re.sub(r"MCDU[123]", "MCDU1", str_in)
 
     def clear_lines(self):
         self.lines = {}
@@ -176,6 +194,7 @@ class ToLissAircraft(Aircraft):
                 line = [(" ", "w") for i in range(PAGE_CHARS_PER_LINE)]
             pos = 0
             for c in line:
+                # this is for (s)pecial color (codes?)
                 if c[1] == "s":  # "special" characters (rev. eng.)
                     if c[0] == "0":
                         c = (chr(SPECIAL_CHARACTERS.ARROW_LEFT.value), "b")
@@ -194,7 +213,10 @@ class ToLissAircraft(Aircraft):
                     elif c[0] == "B":
                         c = (chr(SPECIAL_CHARACTERS.SQUARE_BRACKET_CLOSE.value), "b")
                     elif c[0] == "E":
-                        c = (chr(SPECIAL_CHARACTERS.BOX.value), "a")
+                        c = (chr(SPECIAL_CHARACTERS.SQUARE.value), "a")
+                # this is for "all" color
+                if c[0] == "`":
+                    c = (chr(SPECIAL_CHARACTERS.DEGREE.value), c[1])
                 page[lnum][pos * PAGE_BYTES_PER_CHAR] = c[1]  # color
                 page[lnum][pos * PAGE_BYTES_PER_CHAR + 1] = font_small
                 page[lnum][pos * PAGE_BYTES_PER_CHAR + 2] = c[0]  # char
@@ -207,5 +229,19 @@ class ToLissAircraft(Aircraft):
             show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}label{l}"), 2 * l - 1, 1)
             show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}cont{l}"), 2 * l, 0)
         show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}sp"), 13, 0)
+
+        # Additional, non printed keys in lower right corner of display
+        vertslew_dref = self.set_mcdu_unit2(str_in="AirbusFBW/MCDU1VertSlewKeys", mcdu_unit=mcdu_unit)
+        vertslew_key = self._datarefs.get(self.set_mcdu_unit2(str_in="AirbusFBW/MCDU1VertSlewKeys", mcdu_unit=mcdu_unit))
+        if vertslew_key == 1 or vertslew_key == 2:
+            c = (PAGE_CHARS_PER_LINE - 2) * PAGE_BYTES_PER_CHAR
+            page[PAGE_LINES - 1][c] = "w"
+            page[PAGE_LINES - 1][c + 1] = False
+            page[PAGE_LINES - 1][c + 2] = chr(SPECIAL_CHARACTERS.ARROW_UP.value)
+        if vertslew_key == 1 or vertslew_key == 3:
+            c = (PAGE_CHARS_PER_LINE - 1) * PAGE_BYTES_PER_CHAR
+            page[PAGE_LINES - 1][c] = "w"
+            page[PAGE_LINES - 1][c + 1] = False
+            page[PAGE_LINES - 1][c + 2] = chr(SPECIAL_CHARACTERS.ARROW_DOWN.value)
 
         return page

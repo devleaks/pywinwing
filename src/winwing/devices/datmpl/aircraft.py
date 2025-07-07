@@ -1,6 +1,8 @@
 """
 """
+
 from winwing.helpers.aircraft import Aircraft
+
 
 class DAAircraft(Aircraft):
     """Winwing Device Adapter aircraft specifics.

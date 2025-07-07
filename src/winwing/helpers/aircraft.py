@@ -87,8 +87,10 @@ class Aircraft(ABC):
                         aircrafts[Aircraft.key(author=author, icao=icao)] = data
 
         if len(aircrafts) > 0:
+
             def rep(a):
                 return a.replace("::", " by ")
+
             logger.info(f"aircraft data provided for: {', '.join(f'{rep(a)}' for a in aircrafts)}")
         else:
             logger.warning("no available aircraft")
@@ -121,6 +123,7 @@ class Aircraft(ABC):
             except (TypeError, AttributeError):
                 continue
         return list(subclasses)
+
     @classmethod
     def load_from_data(cls, data):
         a = cls(author=data.get("author"), icao=data.get("icao"))

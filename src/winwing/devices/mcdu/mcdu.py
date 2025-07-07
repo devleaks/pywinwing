@@ -7,6 +7,7 @@ from typing import Dict, List
 from time import sleep
 from datetime import datetime
 
+from winwing.devices import mcdu
 from xpwebapi import CALLBACK_TYPE, DATAREF_DATATYPE, Dataref, Command
 import chardet
 
@@ -185,12 +186,12 @@ class MCDU(WinwingDevice):
 
         drefs1 = self.aircraft.required_datarefs()
         drefs2 = [d for d in self.aircraft.datarefs() if d not in drefs1]
-        drefs_display = set([self.set_mcdu_unit(d) for d in drefs1])
-        drefs_no_display = set([self.set_mcdu_unit(d) for d in drefs2])
+        drefs_display = set([self.aircraft.set_mcdu_unit(str_in=d, mcdu_unit=self.device.mcdu_unit) for d in drefs1])
+        drefs_no_display = set([self.aircraft.set_mcdu_unit(str_in=d, mcdu_unit=self.device.mcdu_unit) for d in drefs2])
         self.required_datarefs = set([strip_index(d) for d in drefs_display])
         self._loaded_datarefs = drefs_display | drefs_no_display
         self.register_datarefs(paths=self._loaded_datarefs)
-        logger.debug(f"registered {len(self._loaded_datarefs)} datarefs for {self.set_mcdu_unit('MCDU1')}, {len(self.required_datarefs)} required")
+        logger.debug(f"registered {len(self._loaded_datarefs)} datarefs for MCDU {self.device.mcdu_unit_id}, {len(self.required_datarefs)} required")
         self.display.set_display_datarefs(dataref_list=self.required_datarefs, mcdu_units=self.mcdu_units)
         logger.debug(f"loaded aircraft {self.icao}")
 
@@ -274,13 +275,6 @@ class MCDU(WinwingDevice):
         self.device.terminate()
         logger.debug("..terminated")
 
-    def set_mcdu_unit(self, str_in: str):
-        if self.device.mcdu_unit & MCDU_DEVICE_MASKS.FO:
-            return re.sub(r"MCDU[123]", "MCDU2", str_in)
-        elif self.device.mcdu_unit & MCDU_DEVICE_MASKS.OBS:
-            return re.sub(r"MCDU[123]", "MCDU3", str_in)
-        return str_in if "MCDU1" in str_in else re.sub(r"MCDU[123]", "MCDU1", str_in)
-
     def reader_callback(self, data_in):
         def xor_bitmask(a, b, bitmask):
             return (a & bitmask) != (b & bitmask)
@@ -305,8 +299,7 @@ class MCDU(WinwingDevice):
         self._reads = self._reads + 1
 
     def wait_for_xplane(self):
-        """Wait for X-Plane API reachability
-        """
+        """Wait for X-Plane API reachability"""
         self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.FAIL, on=False)
         self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.RDY, on=False)
         self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.STATUS, on=False)
@@ -326,15 +319,15 @@ class MCDU(WinwingDevice):
 
     def wait_for_aircraft(self):
         """Wait for value of both
-            - AUTHOR_DATAREF = "sim/aircraft/view/acf_author"
-            - ICAO_DATAREF = "sim/aircraft/view/acf_ICAO"
+        - AUTHOR_DATAREF = "sim/aircraft/view/acf_author"
+        - ICAO_DATAREF = "sim/aircraft/view/acf_ICAO"
         """
         self.register_datarefs(paths=AIRCRAFT_DATAREFS)
         if not self._ready:
             self.display.message("waiting for aircraft...")
         icao = self.get_dataref_value(path=ICAO_DATAREF)
         author = self.get_dataref_value(path=AUTHOR_DATAREF)
-        key =  Aircraft.key(author=author, icao=icao)
+        key = Aircraft.key(author=author, icao=icao)
         warning_count = 0
         if key not in self.VALID_AIRCRAFTS:
             while key not in self.VALID_AIRCRAFTS:
@@ -370,6 +363,7 @@ class MCDU(WinwingDevice):
 
         Registers the aircraft datarefs and wait for all "required" datarefs to have a value.
         """
+
         def data_count():
             drefs = self.get_all_dataref_values()
             reqs = filter(lambda k: k in self.required_datarefs and drefs.get(k) is not None, drefs.keys())
@@ -423,6 +417,7 @@ class MCDU(WinwingDevice):
 
     def on_dataref_update(self, dataref: str, value):
         # Save value in dataref
+
         d = self._datarefs.get(dataref)
         if d is None:
             logger.warning(f"dataref {dataref} not found in registed datarefs")
@@ -482,7 +477,7 @@ class MCDU(WinwingDevice):
             return
 
         if not self.aircraft.is_display_dataref(dataref):
-            logger.debug(f"not a display dataref {dataref}")
+            print(f"not a display dataref {dataref}")
             return
         self.display.variable_changed(dataref=dataref, value=value)
 
@@ -491,7 +486,7 @@ class MCDU(WinwingDevice):
         if b is None:
             logger.warning(f"button id {key_id} not found")
             return
-        unit_dataref = self.set_mcdu_unit(b.dataref)
+        unit_dataref = self.aircraft.set_mcdu_unit(str_in=b.dataref, mcdu_unit=self.device.mcdu_unit)
         logger.debug(f"button {b.label} pressed ({unit_dataref})")
         if b.type == ButtonType.TOGGLE:
             if b.label == "MENU2":  # special treatment to change MCDU unit
@@ -533,7 +528,7 @@ class MCDU(WinwingDevice):
 
     def change_aircraft(self, new_author: str, new_icao: str) -> str:
         # To do:
-        valid_icao_aircrafts = [a[:a.index("::")] for a in self.VALID_AIRCRAFTS]
+        valid_icao_aircrafts = [a[: a.index("::")] for a in self.VALID_AIRCRAFTS]
         if new_icao not in valid_icao_aircrafts:
             logger.warning(f"{new_icao} not in list {','.join(valid_icao_aircrafts)}")
             logger.warning(f"aircraft discrepency MCDU aircraft {self.icao} vs X-Plane aircraft {new_icao}")
@@ -570,7 +565,7 @@ class MCDU(WinwingDevice):
             return
         if b.type == ButtonType.SWITCH:
             logger.debug(f"button {b.label} released")
-            unit_dataref = self.set_mcdu_unit(b.dataref)
+            unit_dataref = self.aircraft.set_mcdu_unit(str_in=b.dataref, mcdu_unit=self.device.mcdu_unit)
             self.api.set_dataref_value(unit_dataref, 0)
             logger.debug(f"set dataref {unit_dataref} to 0")
 
@@ -810,8 +805,7 @@ class MCDUDisplay:
         self._updated.set()
 
     def update(self):
-        """Queueing mechanism to prevent concurrent updates
-        """
+        """Queueing mechanism to prevent concurrent updates"""
         logger.debug("display updater started")
         while not self.update_event.is_set():
             if self._updated.wait(1):

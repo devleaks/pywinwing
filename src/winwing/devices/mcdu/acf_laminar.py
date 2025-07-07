@@ -56,6 +56,11 @@ class LaminarAircraft(Aircraft):
             return -1
         return mcdu_unit
 
+    def set_mcdu_unit(self, str_in: str, mcdu_unit: int):
+        if mcdu_unit == 2:
+            return re.sub(r"fms_cdu[12]", "fms_cdu2", str_in)
+        return str_in if "fms_cdu1" in str_in else re.sub(r"fms_cdu[12]", "fms_cdu1", str_in)
+
     def variable_changed(self, dataref: str, value):
         self._datarefs[dataref] = value
 
@@ -82,7 +87,7 @@ class LaminarAircraft(Aircraft):
         font_small = False
 
         def get_style(s):
-            XP_COLORS = ["W","B","R","Y","G","M","A","W"]  # 0..7, see https://developer.x-plane.com/article/datarefs-for-the-cdu-screen/
+            XP_COLORS = ["W", "B", "R", "Y", "G", "M", "A", "W"]  # 0..7, see https://developer.x-plane.com/article/datarefs-for-the-cdu-screen/
             large = s & (1 << 7)
             reverse = s & (1 << 6)
             flashing = s & (1 << 5)
@@ -96,18 +101,29 @@ class LaminarAircraft(Aircraft):
             style = self._datarefs.get(f"sim/cockpit2/radios/indicators/fms_cdu{mcdu_unit}_style_line{lnum}")
             pos = 0
             for c in line:
-                if ord(c) == 8592:
+                if ord(c) == 9744:
+                    c = chr(SPECIAL_CHARACTERS.DEGREE.value)
+                elif ord(c) == 176:
+                    c = chr(SPECIAL_CHARACTERS.DEGREE.value)
+                elif ord(c) == 9744:
+                    c = chr(SPECIAL_CHARACTERS.SQUARE.value)
+                elif ord(c) == 8592:
                     c = chr(SPECIAL_CHARACTERS.ARROW_LEFT.value)
                 elif ord(c) == 8594:
                     c = chr(SPECIAL_CHARACTERS.ARROW_RIGHT.value)
-                elif ord(c) == 9744:
-                    c = chr(SPECIAL_CHARACTERS.BOX.value)
                 elif ord(c) == 8593:
                     c = chr(SPECIAL_CHARACTERS.ARROW_UP.value)
                 elif ord(c) == 8595:
                     c = chr(SPECIAL_CHARACTERS.ARROW_DOWN.value)
-                elif ord(c) == 176:
-                    c = chr(SPECIAL_CHARACTERS.DEGREE.value)
+                elif ord(c) == 916:
+                    c = chr(SPECIAL_CHARACTERS.DELTA.value)
+                elif ord(c) == 9664:
+                    c = chr(SPECIAL_CHARACTERS.TRIANGLE_LEFT.value)
+                elif ord(c) == 9654:
+                    c = chr(SPECIAL_CHARACTERS.TRIANGLE_RIGHT.value)
+                elif ord(c) == 11041:
+                    c = chr(SPECIAL_CHARACTERS.HEXAGON.value)
+
                 small, color = get_style(style[pos])
                 page[lnum][pos * PAGE_BYTES_PER_CHAR] = color
                 page[lnum][pos * PAGE_BYTES_PER_CHAR + 1] = small

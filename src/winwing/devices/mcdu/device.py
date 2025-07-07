@@ -23,22 +23,25 @@ logger = logging.getLogger(__name__)
 
 WINWING_MCDU_DEVICES = [
     {"vid": 0x4098, "pid": 0xBB36, "name": "MCDU - Captain", "mask": MCDU_DEVICE_MASKS.MCDU | MCDU_DEVICE_MASKS.CAP},
-    {"vid": 0x4098, "pid": 0xBB3E, "name": "MCDU - First Offizer", "mask": MCDU_DEVICE_MASKS.MCDU | MCDU_DEVICE_MASKS.FO},
+    {"vid": 0x4098, "pid": 0xBB3E, "name": "MCDU - First Officer", "mask": MCDU_DEVICE_MASKS.MCDU | MCDU_DEVICE_MASKS.FO},
     {"vid": 0x4098, "pid": 0xBB3A, "name": "MCDU - Observer", "mask": MCDU_DEVICE_MASKS.MCDU | MCDU_DEVICE_MASKS.OBS},
 ]
 
 
-XP_COLORS = ["K","C","R","Y","G","M","A","W"]  # 0..7, see https://developer.x-plane.com/article/datarefs-for-the-cdu-screen/
-
 class SPECIAL_CHARACTERS(IntEnum):
-    ARROW_LEFT = 60
-    ARROW_UP = 61
-    ARROW_RIGHT = 62
-    ARROW_DOWN = 63
-    DEGREE = 176  #
-    SQUARE_BRACKET_OPEN = 91
-    SQUARE_BRACKET_CLOSE = 93
-    BOX = 35
+    ARROW_LEFT = 9900
+    ARROW_UP = 9901
+    ARROW_RIGHT = 9902
+    ARROW_DOWN = 9903
+    DEGREE = 9904
+    SQUARE_BRACKET_OPEN = 9905
+    SQUARE_BRACKET_CLOSE = 9906
+    SQUARE = 9907
+    HEXAGON = 9908
+    TRIANGLE = 9909
+    TRIANGLE_LEFT = 9910
+    TRIANGLE_RIGHT = 9911
+    DELTA = 9912
 
 
 class MCDUDevice:
@@ -158,61 +161,49 @@ class MCDUDevice:
                 buf.append(data_high)
                 # Character
                 val = ord(page[i][j * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1])
-                if val > 255:
-                    logger.error(f"character: {page[i][j * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1]}, {val}, {i}, {j}")
 
+                # Replace special chars with UTF-8 bytes
+                #   (UTF-16, UTF-8)
+                # ° (00B0, 0xC2 0xB0)
+                # ← (2190, 0xE2 0x86 0x90)
+                # ↑ (2191, 0xE2 0x86 0x91)
+                # → (2192, 0xE2 0x86 0x92)
+                # ↓ (2193, 0xE2 0x86 0x93)
+                # ☐ (2610, 0xE2 0x98 0x90
+                # Δ (0394, 0xCE 0x94)
+                # ⬡ (2B21, 0xE2 0xAC 0xA1)
+                # ◀ (25C0, 0xE2 0x97 0x80)
+                # ▶ (25B6, 0xE2 0x96 0xB6)
                 if val == SPECIAL_CHARACTERS.DEGREE.value:  # °
                     buf.extend([0xC2, 0xB0])
-                elif val == SPECIAL_CHARACTERS.BOX.value:  # #
+                elif val == SPECIAL_CHARACTERS.SQUARE.value:  # ☐
                     buf.extend([0xE2, 0x98, 0x90])
-                elif val == SPECIAL_CHARACTERS.ARROW_LEFT.value:  # <
+                elif val == SPECIAL_CHARACTERS.ARROW_LEFT.value:  # ←
                     buf.extend([0xE2, 0x86, 0x90])
-                elif val == SPECIAL_CHARACTERS.ARROW_RIGHT.value:  # >
-                    buf.extend([0xE2, 0x86, 0x92])
-                elif val == SPECIAL_CHARACTERS.ARROW_DOWN.value: # down arrow
-                    buf.extend([0xE2, 0x86, 0x93])
-                elif val == SPECIAL_CHARACTERS.ARROW_UP.value: # up arrow
+                elif val == SPECIAL_CHARACTERS.ARROW_UP.value:  # ↑
                     buf.extend([0xE2, 0x86, 0x91])
+                elif val == SPECIAL_CHARACTERS.ARROW_RIGHT.value:  # →
+                    buf.extend([0xE2, 0x86, 0x92])
+                elif val == SPECIAL_CHARACTERS.ARROW_DOWN.value:  # ↓
+                    buf.extend([0xE2, 0x86, 0x93])
+                elif val == SPECIAL_CHARACTERS.TRIANGLE.value:  # Δ
+                    buf.extend([0xCE, 0x94])
+                elif val == SPECIAL_CHARACTERS.HEXAGON.value:  # ⬡
+                    buf.extend([0xE2, 0xAC, 0xA1])
+                elif val == SPECIAL_CHARACTERS.TRIANGLE_LEFT.value:  # ◀
+                    buf.extend([0xE2, 0x97, 0x80])
+                elif val == SPECIAL_CHARACTERS.TRIANGLE_RIGHT.value:  # ▶
+                    buf.extend([0xE2, 0x96, 0xB6])
+                elif val == SPECIAL_CHARACTERS.SQUARE_BRACKET_OPEN.value:  # ⬡
+                    buf.append(ord("["))
+                elif val == SPECIAL_CHARACTERS.SQUARE_BRACKET_CLOSE.value:  # ⬡
+                    buf.append(ord("]"))
                 else:
+                    if val > 255:
+                        logger.error(f"character: {page[i][j * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1]}, {val}, {i}, {j}")
                     buf.append(val)
 
         self.write_buffer(buffer=buf)
-
-        # # Handle special chars (ISO-8859-1)
-        # if(c == "ä"):
-        #     # left arrow
-        #     currChar = [0xe2, 0x86, 0x90]
-        # elif(c == "ö"):
-        #     # up arrow
-        #     currChar = [0xe2, 0x86, 0x91]
-        # elif(c == "ü"):
-        #     # right arrow
-        #     currChar = [0xe2, 0x86, 0x92]
-        # elif(c == "Ä"):
-        #     # down arrow
-        #     currChar = [0xe2, 0x86, 0x93]
-        # elif(c == "Ö"):
-        #     # degree circle
-        #     currChar = [0xc2, 0xb0]
-        # elif(c == "Ü"):
-        #     # open square
-        #     currChar = [0xe2, 0x98, 0x90]
-
-
-        #     if c[2] == chr(35):
-        #         c[2] = "☐"
-        #     elif c[2] == chr(60):
-        #         c[2] = "←"
-        #     elif c[2] == chr(62):
-        #         c[2] = "→"
-        #     elif c[2] == chr(91):
-        #         c[2] = "["
-        #     elif c[2] == chr(93):
-        #         c[2] = "]"
-        # if c[2] == "`":
-        #     c[2] = "°"
-
-
 
     def write_buffer(self, buffer: bytes):
         buf = buffer
