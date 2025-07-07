@@ -7,6 +7,7 @@ from typing import Dict, List
 from time import sleep
 from datetime import datetime
 
+import winwing
 from winwing.devices import mcdu
 from xpwebapi import CALLBACK_TYPE, DATAREF_DATATYPE, Dataref, Command
 import chardet
@@ -51,7 +52,7 @@ class MCDU(WinwingDevice):
     """
 
     WINWING_PRODUCT_IDS = [47926, 47930, 47934]
-    VERSION = "0.8.0"
+    VERSION = "0.8.1"
 
     def __init__(self, vendor_id: int, product_id: int, **kwargs):
         WinwingDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
@@ -121,7 +122,7 @@ class MCDU(WinwingDevice):
         self.api.add_callback(CALLBACK_TYPE.ON_DATAREF_UPDATE, self.on_dataref_update)
 
     def init(self):
-        self.display.message("waiting for X-Plane...")
+        self.display.message("Welcome", extra=True)
 
     def reset_buttons(self):
         self._buttons_press_event = [0] * len(self.buttons)
@@ -253,6 +254,7 @@ class MCDU(WinwingDevice):
         logger.debug("starting..")
         self.device.set_callback(self.reader_callback)
         self.device.start()
+        self.display.message("waiting for X-Plane...")
         self.api.connect()
         self.wait_for_resources()
         logger.debug("..started")
@@ -477,7 +479,7 @@ class MCDU(WinwingDevice):
             return
 
         if not self.aircraft.is_display_dataref(dataref):
-            print(f"not a display dataref {dataref}")
+            logger.debug(f"not a display dataref {dataref}")
             return
         self.display.variable_changed(dataref=dataref, value=value)
 
@@ -733,7 +735,7 @@ class MCDUDisplay:
             self.aircraft.clear_lines()
         self._all_ok = False
 
-    def message(self, message):
+    def message(self, message, extra: bool = False):
         def center_line(line, text, color, font_small: bool = False):
             text = text[:PAGE_CHARS_PER_LINE]
             startpos = int((PAGE_CHARS_PER_LINE - len(text)) / 2)
@@ -741,15 +743,28 @@ class MCDUDisplay:
 
         self.device.clear()
         self.clear_page()
-        center_line(0, "Winwing  MCDU", MCDU_COLOR.DEFAULT.value)
-        center_line(1, "for X-Plane", MCDU_COLOR.DEFAULT.value)
-        center_line(4, f"VERSION {MCDU.VERSION}", MCDU_COLOR.CYAN.value, True)
 
+        # Heading
+        title = "WINWING for X-Plane"
+        idx = title.index("G") + int((PAGE_CHARS_PER_LINE - len(title))/2)
+        center_line(0, title, MCDU_COLOR.DEFAULT.value)
+        self.page[0][idx * PAGE_BYTES_PER_CHAR] = "r"
+
+        # Message
         center_line(8, message, MCDU_COLOR.AMBER.value)
 
-        center_line(12, "github.com/devleaks", MCDU_COLOR.DEFAULT.value, True)
-        center_line(13, "/winwing_toliss_mcdu", MCDU_COLOR.DEFAULT.value, True)
+        # Extra (version information)
+        if extra:
+            center_line(1, f"VERSION {winwing.version}", MCDU_COLOR.CYAN.value, True)
+            center_line(4, f"MCDU v. {MCDU.VERSION}", MCDU_COLOR.GREEN.value, True)
+            center_line(12, "github.com/devleaks", MCDU_COLOR.DEFAULT.value, True)
+            title = "/pywinwing"
+            center_line(13, title, MCDU_COLOR.DEFAULT.value, True)
+            idx = title.index("g") + int((PAGE_CHARS_PER_LINE - len(title))/2)
+            self.page[13][idx * PAGE_BYTES_PER_CHAR] = "r"
         self.device.display_page(page=self.page)
+        if extra:
+            sleep(1)
 
     def write_line_to_page(self, line, pos, text: str, color: str = MCDU_COLOR.DEFAULT.value, font_small: bool = False):
         if not (0 <= line <= PAGE_LINES):
