@@ -6,6 +6,7 @@ import re
 from typing import Dict, List
 from time import sleep
 from datetime import datetime
+import textwrap
 
 import winwing
 from winwing.devices import mcdu
@@ -14,7 +15,7 @@ import chardet
 
 from winwing.helpers.aircraft import Aircraft
 from ..winwing import WinwingDevice
-from .device import MCDUDevice, MCDU_DEVICE_MASKS
+from .device import SPECIAL_CHARACTERS, MCDUDevice, MCDU_DEVICE_MASKS
 from .acf_toliss import ToLissAircraft
 from .acf_laminar import LaminarAircraft
 from .constant import (
@@ -26,8 +27,7 @@ from .constant import (
     AUTHOR_DATAREF,
     MCDU_ANNUNCIATORS,
     MCDU_BRIGHTNESS,
-    MCDU_TERM_COLORS,
-    MCDU_COLOR,
+    COLORS,
     MCDU_STATUS,
     PAGE_LINES,
     PAGE_CHARS_PER_LINE,
@@ -52,7 +52,7 @@ class MCDU(WinwingDevice):
     """
 
     WINWING_PRODUCT_IDS = [47926, 47930, 47934]
-    VERSION = "0.8.3"
+    VERSION = "0.9.0"
 
     def __init__(self, vendor_id: int, product_id: int, **kwargs):
         WinwingDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
@@ -122,6 +122,7 @@ class MCDU(WinwingDevice):
         self.api.add_callback(CALLBACK_TYPE.ON_DATAREF_UPDATE, self.on_dataref_update)
 
     def init(self):
+        # self.display.test_screen()
         self.display.message("Welcome", extra=True)
 
     def reset_buttons(self):
@@ -670,11 +671,13 @@ class MCDUColorTerminal:
         Returns:
             str: characters ready to display, include newlines.
         """
+        TERMINAL_COLOR_CODES = {c.key: c.term for c in COLORS}
         print("\n")
         for i in range(PAGE_LINES):
             for j in range(PAGE_CHARS_PER_LINE):
                 curr = ""
                 c = page[i][j * PAGE_BYTES_PER_CHAR : (j + 1) * PAGE_BYTES_PER_CHAR]
+                # c[1] is bool small_font, ignored for terminal
                 if c[0] == "s":  # "special" characters (rev. eng.)
                     if c[2] == chr(35):
                         c[2] = "☐"
@@ -690,7 +693,7 @@ class MCDUColorTerminal:
                     c[2] = "°"
                 if curr != c[0]:
                     curr = c[0]
-                    print(MCDU_TERM_COLORS[c[0]], end="")
+                    print(TERMINAL_COLOR_CODES.get(c[0], "\033[38;5;231m"), end="")  # default to white
                 print(c[2], end="")
             print("")
         print("\033[0m")  # reset
@@ -728,7 +731,12 @@ class MCDUDisplay:
         self.mcdu_units = mcdu_units
 
     def clear_page(self):
-        self.page = [[" " for _ in range(PAGE_BYTES_PER_LINE)] for _ in range(PAGE_LINES)]
+        self.page = []
+        for i in range(PAGE_LINES):
+            line = []
+            for j in range(PAGE_CHARS_PER_LINE):
+                line.extend([COLORS.DEFAULT, False, " "])
+            self.page.append(line)
 
     def clear_lines(self):
         if self.aircraft is not None:
@@ -736,7 +744,7 @@ class MCDUDisplay:
         self._all_ok = False
 
     def message(self, message, extra: bool = False):
-        def center_line(line, text, color, font_small: bool = False):
+        def center_line(line: int, text: str, color: COLORS, font_small: bool = False):
             text = text[:PAGE_CHARS_PER_LINE]
             startpos = int((PAGE_CHARS_PER_LINE - len(text)) / 2)
             self.write_line_to_page(line, startpos, text, color, font_small)
@@ -747,26 +755,45 @@ class MCDUDisplay:
         # Heading
         title = "WINWING for X-Plane"
         idx = title.index("G") + int((PAGE_CHARS_PER_LINE - len(title))/2)
-        center_line(0, title, MCDU_COLOR.DEFAULT.value)
-        self.page[0][idx * PAGE_BYTES_PER_CHAR] = "r"
+        center_line(0, title, COLORS.DEFAULT)
+        self.page[0][idx * PAGE_BYTES_PER_CHAR] = COLORS.RED
 
         # Message
-        center_line(8, message, MCDU_COLOR.AMBER.value)
+        center_line(8, message, COLORS.AMBER)
 
         # Extra (version information)
         if extra:
-            center_line(1, f"VERSION {winwing.version}", MCDU_COLOR.CYAN.value, True)
-            center_line(4, f"MCDU v. {MCDU.VERSION}", MCDU_COLOR.GREEN.value, True)
-            center_line(12, "github.com/devleaks", MCDU_COLOR.DEFAULT.value, True)
+            center_line(1, f"VERSION {winwing.version}", COLORS.CYAN, True)
+            self.write_line_to_page(3, 0, " MCDU", COLORS.WHITE, True)
+            self.write_line_to_page(4, 0, f"{chr(SPECIAL_CHARACTERS.ARROW_LEFT)}{MCDU.VERSION}", COLORS.CYAN, False)
+            center_line(12, "github.com/devleaks", COLORS.DEFAULT, True)
             title = "/pywinwing"
-            center_line(13, title, MCDU_COLOR.DEFAULT.value, True)
+            center_line(13, title, COLORS.DEFAULT, True)
             idx = title.index("g") + int((PAGE_CHARS_PER_LINE - len(title))/2)
-            self.page[13][idx * PAGE_BYTES_PER_CHAR] = "r"
+            self.page[13][idx * PAGE_BYTES_PER_CHAR] = COLORS.RED
         self.device.display_page(page=self.page)
         if extra:
             sleep(1)
 
-    def write_line_to_page(self, line, pos, text: str, color: str = MCDU_COLOR.DEFAULT.value, font_small: bool = False):
+    def test_screen(self):
+        self.device.clear()
+        self.clear_page()
+        prnt = "".join([chr(c) for c in range(33, 127)])
+        lines = textwrap.wrap(prnt, 23)
+        lines.append("".join([chr(c.value) for c in SPECIAL_CHARACTERS]))
+        i = 0
+        for c in COLORS:
+            if i < 14:
+                self.write_line_to_page(i, 0,  lines[i%len(lines)], c, False)
+                i = i + 1
+        for c in COLORS:
+            if i < 14:
+                self.write_line_to_page(i, 0,  lines[i%len(lines)], c, False)
+                i = i + 1
+        self.device.display_page(page=self.page)
+        sleep(10)
+
+    def write_line_to_page(self, line, pos, text: str, color: COLORS, font_small: bool = False):
         if not (0 <= line <= PAGE_LINES):
             logger.warning(f"line number out of range {line}, {text}")
             return

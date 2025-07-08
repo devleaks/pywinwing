@@ -9,6 +9,7 @@ from winwing.devices import mcdu
 from winwing.devices.mcdu.device import SPECIAL_CHARACTERS
 from winwing.helpers.aircraft import Aircraft
 from .constant import (
+    COLORS,
     PAGE_LINES,
     PAGE_BYTES_PER_CHAR,
     PAGE_BYTES_PER_LINE,
@@ -81,29 +82,35 @@ class LaminarAircraft(Aircraft):
         return value
 
     def show_page(self, mcdu_unit: int) -> list:
+        COLORS_BY_STYLE_MASK = [
+            COLORS.BLACK,
+            COLORS.CYAN,
+            COLORS.RED,
+            COLORS.YELLOW,
+            COLORS.GREEN,
+            COLORS.MAGENTA,
+            COLORS.AMBER,
+            COLORS.WHITE,
+        ]
         page = [[" " for _ in range(PAGE_BYTES_PER_LINE)] for _ in range(PAGE_LINES)]
 
         # See https://developer.x-plane.com/article/datarefs-for-the-cdu-screen/
         font_small = False
 
-        def get_style(s):
-            XP_COLORS = ["W", "B", "R", "Y", "G", "M", "A", "W"]  # 0..7, see https://developer.x-plane.com/article/datarefs-for-the-cdu-screen/
+        def parse_style(s):
             large = s & (1 << 7)
             reverse = s & (1 << 6)
             flashing = s & (1 << 5)
             underscore = s & (1 << 4)
-            xp_color = s & 0x07
-            # print(f"{s:08b}", f"L={large} {reverse} {flashing} {underscore} C={xp_color:03b}", XP_COLORS[xp_color])
-            return large == 0, XP_COLORS[xp_color]
+            color_mask = s & 0x07
+            return large == 0, COLORS_BY_STYLE_MASK[color_mask]
 
         def show_line(lnum, fs):
             line = self._datarefs.get(f"sim/cockpit2/radios/indicators/fms_cdu{mcdu_unit}_text_line{lnum}")
             style = self._datarefs.get(f"sim/cockpit2/radios/indicators/fms_cdu{mcdu_unit}_style_line{lnum}")
             pos = 0
             for c in line:
-                if ord(c) == 9744:
-                    c = chr(SPECIAL_CHARACTERS.DEGREE.value)
-                elif ord(c) == 176:
+                if ord(c) == 176:
                     c = chr(SPECIAL_CHARACTERS.DEGREE.value)
                 elif ord(c) == 9744:
                     c = chr(SPECIAL_CHARACTERS.SQUARE.value)
@@ -124,7 +131,7 @@ class LaminarAircraft(Aircraft):
                 elif ord(c) == 11041:
                     c = chr(SPECIAL_CHARACTERS.HEXAGON.value)
 
-                small, color = get_style(style[pos])
+                small, color = parse_style(style[pos])
                 page[lnum][pos * PAGE_BYTES_PER_CHAR] = color
                 page[lnum][pos * PAGE_BYTES_PER_CHAR + 1] = small
                 page[lnum][pos * PAGE_BYTES_PER_CHAR + 2] = c  # char

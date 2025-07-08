@@ -11,8 +11,9 @@ from .constant import (
     MCDU_ANNUNCIATORS,
     MCDU_BRIGHTNESS,
     MCDU_DEVICE_MASKS,
-    MCDU_INIT_SEQUENCE,
-    COLOR_MAP,
+    MCDU_INIT_SEQUENCE1,
+    MCDU_INIT_SEQUENCE2 as MCDU_INIT_SEQUENCE,
+    COLORS,
     PAGE_LINES,
     PAGE_CHARS_PER_LINE,
     PAGE_BYTES_PER_CHAR,
@@ -38,11 +39,10 @@ class SPECIAL_CHARACTERS(IntEnum):
     SQUARE_BRACKET_CLOSE = 9906
     SQUARE = 9907
     HEXAGON = 9908
-    TRIANGLE = 9909
     TRIANGLE_LEFT = 9910
     TRIANGLE_RIGHT = 9911
     DELTA = 9912
-
+    TEST = 9913
 
 class MCDUDevice:
     def __init__(self, vendor_id: int, product_id: int):
@@ -77,7 +77,7 @@ class MCDUDevice:
         return mcdu_unit
 
     def init(self):
-        for s in MCDU_INIT_SEQUENCE(background_color=[0x00, 0x00, 0x00]):
+        for s in MCDU_INIT_SEQUENCE(background_color=[0x00, 0x00, 0x00], colors=[c.rgb for c in COLORS]):
             self.device.write(bytes(s))
 
     @property
@@ -116,15 +116,19 @@ class MCDUDevice:
         set_led_msg = [0x02, 0x32, 0xBB, 0, 0, 3, 0x49, led.value, 1 if on else 0, 0, 0, 0, 0, 0]
         self.device.write(bytes(set_led_msg))
 
-    def _character_code(self, color: int | str, font_small: bool = False) -> Tuple[int, int]:
-        if type(color) is int:
-            color = chr(color)
-        color = color.upper()
-        if color not in COLOR_MAP:
-            logger.warning(f"invalid color {color}, using white")
-            color = "W"
-        color = COLOR_MAP[color] + 0x016B if font_small else COLOR_MAP[color]
-        return (color & 0x0FF, (color >> 8) & 0xFF)
+    def _character_code(self, color: COLORS, font_small: bool = False) -> Tuple[int, int]:
+        color_mask = color.ww_mask + 0x016B if font_small else color.ww_mask
+        return (color_mask & 0x0FF, (color_mask >> 8) & 0xFF)
+
+    # def _character_code(self, color: int | str, font_small: bool = False) -> Tuple[int, int]:
+    #     if type(color) is int:
+    #         color = chr(color)
+    #     color = color.upper()
+    #     if color not in COLOR_MAP:
+    #         logger.warning(f"invalid color {color}, using white")
+    #         color = "W"
+    #     color = COLOR_MAP[color] + 0x016B if font_small else COLOR_MAP[color]
+    #     return (color & 0x0FF, (color >> 8) & 0xFF)
 
     def clear(self):
         blank_line = [0xF2] + [0x42, 0x00, ord(" ")] * PAGE_CHARS_PER_LINE
@@ -186,8 +190,6 @@ class MCDUDevice:
                     buf.extend([0xE2, 0x86, 0x92])
                 elif val == SPECIAL_CHARACTERS.ARROW_DOWN.value:  # ↓
                     buf.extend([0xE2, 0x86, 0x93])
-                elif val == SPECIAL_CHARACTERS.TRIANGLE.value:  # Δ
-                    buf.extend([0xCE, 0x94])
                 elif val == SPECIAL_CHARACTERS.HEXAGON.value:  # ⬡
                     buf.extend([0xE2, 0xAC, 0xA1])
                 elif val == SPECIAL_CHARACTERS.TRIANGLE_LEFT.value:  # ◀
@@ -198,6 +200,10 @@ class MCDUDevice:
                     buf.append(ord("["))
                 elif val == SPECIAL_CHARACTERS.SQUARE_BRACKET_CLOSE.value:  # ⬡
                     buf.append(ord("]"))
+                elif val == SPECIAL_CHARACTERS.DELTA.value:  # ⬡
+                    buf.extend([0xCE, 0x94])
+                elif val == SPECIAL_CHARACTERS.TEST.value:  # ⬡
+                    buf.extend([0xE2, 0x98, 0x89])  # sun = [0xE2, 0x98, 0x89]
                 else:
                     if val > 255:
                         logger.error(f"character: {page[i][j * PAGE_BYTES_PER_CHAR + PAGE_BYTES_PER_CHAR - 1]}, {val}, {i}, {j}")
@@ -206,6 +212,16 @@ class MCDUDevice:
         self.write_buffer(buffer=buf)
 
     def write_buffer(self, buffer: bytes):
+        # check buffer first
+        pos = 0
+        for c in buffer:
+            if c > 255:
+                break
+            pos = pos + 1
+        if len(buffer) != pos:
+            logger.warning(f"invalid buffer, no display (pos={pos}/{len(buffer)}, {buffer[pos]})")
+            return
+
         buf = buffer
         with self.busy_writing:
             while len(buf) > 0:
