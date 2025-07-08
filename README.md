@@ -1,7 +1,7 @@
 # pywinwing - Winwing Devices to X-Plane
 
 
-This script allows Winwings unit to work with Laminar Research X-Plane Flight Simulator.
+This script allows Winwings devices to work with Laminar Research X-Plane Flight Simulator.
 
 
 # Installation
@@ -18,7 +18,6 @@ pip install 'winwing @ git+https://github.com/devleaks/pywinwing.git'
 
 The installation process creates a new command that can be executed from the prompt
 in a terminal window.
-
 
 ```
 $ winwing-cli --help
