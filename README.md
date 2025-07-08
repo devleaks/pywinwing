@@ -3,8 +3,6 @@
 
 This script allows Winwings unit to work with Laminar Research X-Plane Flight Simulator.
 
-Devices supported by this script will 
-
 
 # Installation
 
@@ -41,31 +39,21 @@ options:
 ```
 
 
-# Usage
-
-Application will switch aircraft if you do.
-
-If no suitable aircraft is found for the device, it will display _waiting for aircraft..._
-on the MCDU display.
-
-This script only allows for known (devices, aircrafts) combination.
-
-
-# Important Note
+## Important Note
 
 `winwing-cli` application is stateless.
 
 In case of problem, misbehavior, errors... simply stop the application and restart it.
 If problem persists, enter an issue on github.
 
-Display sometimes get de-synchronized.
+MCDU display sometimes get de-synchronized.
 To re-synchronize it, unplug the Winwing MCDU device for a few seconds and plug it in back.
 Restart `winwing-cli`.
 
 
 # Future
 
-Works and tested with the following Winwing devices and listed aircrafts:
+Works and tested with the following Winwing devices and aircrafts:
 
 - [MCDU](https://winwingsim.com/view/goods-details.html?id=945)
     - ToLiss [A321](https://store.x-plane.org/Airbus-A321-XP12-by-Toliss_p_1632.html)+[neo option](https://store.x-plane.org/A321-NEO-ADD-ON-to-the-ToLiss-Airbus-A321_p_1351.html)
@@ -75,16 +63,4 @@ Works and tested with the following Winwing devices and listed aircrafts:
 
 This development is a proof of concept and will be enhanced to work with other Winwing devices and other aircrafts.
 To test it, one obviously needs to own both the device and the aircraft.
-
-
-# Development
-
-The pywinwing package is a *framework* that allows for inclusion of
-  - more Winwing devices
-  - more aircrafts
-for existing or new devices.
-
-Please refer to the technical wiki for more information on the framework.
-
-Last updated July 2025
 
