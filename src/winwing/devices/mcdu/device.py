@@ -11,8 +11,7 @@ from .constant import (
     MCDU_ANNUNCIATORS,
     MCDU_BRIGHTNESS,
     MCDU_DEVICE_MASKS,
-    MCDU_INIT_SEQUENCE1,
-    MCDU_INIT_SEQUENCE2 as MCDU_INIT_SEQUENCE,
+    MCDU_INIT_SEQUENCE,
     COLORS,
     PAGE_LINES,
     PAGE_CHARS_PER_LINE,
@@ -77,7 +76,7 @@ class MCDUDevice:
         return mcdu_unit
 
     def init(self):
-        for s in MCDU_INIT_SEQUENCE(background_color=[0x00, 0x00, 0x00], colors=[c.rgb for c in COLORS]):
+        for s in MCDU_INIT_SEQUENCE:
             self.device.write(bytes(s))
 
     @property
@@ -119,16 +118,6 @@ class MCDUDevice:
     def _character_code(self, color: COLORS, font_small: bool = False) -> Tuple[int, int]:
         color_mask = color.ww_mask + 0x016B if font_small else color.ww_mask
         return (color_mask & 0x0FF, (color_mask >> 8) & 0xFF)
-
-    # def _character_code(self, color: int | str, font_small: bool = False) -> Tuple[int, int]:
-    #     if type(color) is int:
-    #         color = chr(color)
-    #     color = color.upper()
-    #     if color not in COLOR_MAP:
-    #         logger.warning(f"invalid color {color}, using white")
-    #         color = "W"
-    #     color = COLOR_MAP[color] + 0x016B if font_small else COLOR_MAP[color]
-    #     return (color & 0x0FF, (color >> 8) & 0xFF)
 
     def clear(self):
         blank_line = [0xF2] + [0x42, 0x00, ord(" ")] * PAGE_CHARS_PER_LINE
