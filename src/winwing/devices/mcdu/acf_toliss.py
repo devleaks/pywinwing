@@ -5,7 +5,7 @@ import logging
 import re
 from typing import Set
 
-from winwing.helpers.aircraft import Aircraft
+from .mcdu_aircraft import MCDUAircraft
 from .device import SPECIAL_CHARACTERS
 from .constant import (
     COLORS,
@@ -37,17 +37,17 @@ logger = logging.getLogger(__name__)
 MCDU_DISPLAY_DATA = "AirbusFBW/MCDU(?P<unit>[1-3]+)(?P<name>(title|stitle|label|cont|scont|sp)+)(?P<line>[1-6]*)(?P<large>[L]*)(?P<color>[abgmswy]+)"
 
 
-class ToLissAircraft(Aircraft):
+class ToLissAircraft(MCDUAircraft):
 
     AIRCRAFT_KEYS = [
-        Aircraft.key(icao="A321", author="Gliding Kiwi"),
-        Aircraft.key(icao="A21N", author="Gliding Kiwi"),
-        Aircraft.key(icao="A339", author="GlidingKiwi"),
-        Aircraft.key(icao="A359", author="FlightFactor and ToLiss"),
+        MCDUAircraft.key(icao="A321", author="Gliding Kiwi"),
+        MCDUAircraft.key(icao="A21N", author="Gliding Kiwi"),
+        MCDUAircraft.key(icao="A339", author="GlidingKiwi"),
+        MCDUAircraft.key(icao="A359", author="FlightFactor and ToLiss"),
     ]
 
     def __init__(self, author: str, icao: str, variant: str | None = None) -> None:
-        Aircraft.__init__(self, author=author, icao=icao, variant=variant)
+        MCDUAircraft.__init__(self, author=author, icao=icao, variant=variant)
 
         self._datarefs = {}
         self.lines = {}

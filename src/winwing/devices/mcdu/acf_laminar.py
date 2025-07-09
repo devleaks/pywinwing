@@ -5,9 +5,8 @@ import logging
 import re
 from typing import Set
 
-from winwing.devices import mcdu
 from winwing.devices.mcdu.device import SPECIAL_CHARACTERS
-from winwing.helpers.aircraft import Aircraft
+from .mcdu_aircraft import MCDUAircraft
 from .constant import (
     COLORS,
     PAGE_LINES,
@@ -24,14 +23,14 @@ logger = logging.getLogger(__name__)
 MCDU_DISPLAY_DATA = "sim/cockpit2/radios/indicators/fms_cdu(?P<unit>[1-2]+)_(?P<name>(text|style)+)_line(?P<line>[0-9]+)"
 
 
-class LaminarAircraft(Aircraft):
+class LaminarAircraft(MCDUAircraft):
 
     AIRCRAFT_KEYS = [
-        Aircraft.key(icao="A333", author="Alex Unruh, Rodrigo Fernandez, Massimo Durando, Jim Gregory, Marco Auer"),
+        MCDUAircraft.key(icao="A333", author="Alex Unruh, Rodrigo Fernandez, Massimo Durando, Jim Gregory, Marco Auer"),
     ]
 
     def __init__(self, author: str, icao: str, variant: str | None = None) -> None:
-        Aircraft.__init__(self, author=author, icao=icao, variant=variant)
+        MCDUAircraft.__init__(self, author=author, icao=icao, variant=variant)
         self._datarefs = {}
 
     @property
