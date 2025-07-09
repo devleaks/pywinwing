@@ -52,7 +52,7 @@ class MCDU(WinwingDevice):
     """
 
     WINWING_PRODUCT_IDS = [47926, 47930, 47934]
-    VERSION = "0.9.0"
+    VERSION = "0.9.1"
 
     def __init__(self, vendor_id: int, product_id: int, **kwargs):
         WinwingDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
@@ -122,6 +122,7 @@ class MCDU(WinwingDevice):
     def set_api(self, api):
         self.api = api
         self.api.add_callback(CALLBACK_TYPE.ON_DATAREF_UPDATE, self.on_dataref_update)
+        self.api.add_callback(CALLBACK_TYPE.ON_CLOSE, self.on_lost_connection)
 
     def init(self):
         # self.display.test_screen()
@@ -302,6 +303,12 @@ class MCDU(WinwingDevice):
         if self._reads % 20 == 0:
             self.do_sensors(data_in)
         self._reads = self._reads + 1
+
+    def on_lost_connection(self):
+        self.display.message("waiting for X-Plane...")
+        self.api.disconnect()  # cleanup existing
+        self.api.connect()  # restarts from no connection
+        self.wait_for_resources()
 
     def wait_for_xplane(self):
         """Wait for X-Plane API reachability"""

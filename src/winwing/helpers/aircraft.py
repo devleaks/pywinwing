@@ -4,6 +4,7 @@
 import os
 import glob
 import logging
+import inspect
 
 from abc import ABC
 from typing import Tuple, Dict, Any, Set, List
@@ -33,6 +34,18 @@ class Aircraft(ABC):
     @staticmethod
     def key(author: str, icao: str) -> str:
         return f"{icao}::{author}"
+
+    @staticmethod
+    def pretty_author(author: str) -> str:
+        max_len = 20
+        n = author
+        if len(n) > max_len:
+            i = n.rfind(" ", 0, max_len)
+            if i > 0:
+                n = n[:i]
+            if len(n) < len(author):
+                n = n + ".."
+        return n
 
     @staticmethod
     def new(author: str, icao: str, extension_paths: List[str] = []):
@@ -86,16 +99,13 @@ class Aircraft(ABC):
                         if author is not None and icao is not None:
                             data["__filename__"] = file
                             aircrafts[Aircraft.key(author=author, icao=icao)] = data
-
-        if len(aircrafts) > 0:
-
-            def rep(a):
-                return a.replace("::", " by ")
-
-            logger.info(f"aircraft data provided for: {', '.join(f'{rep(a)}' for a in aircrafts)}")
-        else:
+        if len(aircrafts) == 0:
             logger.warning("no available aircraft")
-
+            return {}
+        def pretty(a):
+            a = a.split("::")
+            return f"{a[0]} by {Aircraft.pretty_author(a[1])}"
+        logger.info(f"aircraft data provided for: {', '.join(f'{pretty(a)}' for a in aircrafts)}")
         return aircrafts
 
     @staticmethod
@@ -118,12 +128,15 @@ class Aircraft(ABC):
             raise ValueError("Invalid class" + repr(Aircraft)) from ex
         while stack:
             sub = stack.pop()
-            subclasses.add(sub)
+            if not inspect.isabstract(sub):
+                subclasses.add(sub)
+            else:
+                logger.debug(f"is abstract {sub}")
             try:
                 stack.extend(s for s in sub.__subclasses__() if s not in subclasses)
             except (TypeError, AttributeError):
                 continue
-        print(">>>", list(subclasses))
+        logger.info(f"aircaft adapters {subclasses}")
         return list(subclasses)
 
     @classmethod

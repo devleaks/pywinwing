@@ -235,10 +235,11 @@ class ToLissAircraft(MCDUAircraft):
                 # this is for "all" color
                 if c[0] == "`":
                     c = (chr(SPECIAL_CHARACTERS.DEGREE.value), c[1])
-                if type(c[1]) is str:
-                    logger.warning(f"invalid color {c[1]}, line={line} substituing default color")
-                    c[1] = COLORS.DEFAULT
-                page[lnum][pos * PAGE_BYTES_PER_CHAR] = c[1]  # color
+                color = c[1]
+                if type(color) is str:
+                    logger.warning(f"invalid color {color}, line={[c[0] for c in line]} substituing default color")
+                    color = COLORS.DEFAULT
+                page[lnum][pos * PAGE_BYTES_PER_CHAR] = color
                 page[lnum][pos * PAGE_BYTES_PER_CHAR + 1] = font_small
                 page[lnum][pos * PAGE_BYTES_PER_CHAR + 2] = c[0]  # char
                 pos = pos + 1
