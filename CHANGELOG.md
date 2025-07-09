@@ -1,5 +1,6 @@
 # Changelog
 
+- 0.2.1 - Added extension folder handling for new devices
 - 0.2.0 - Added extension folder handling for aircrafts
 - 0.1.1 - Cleanup up all color variants, now only one authoritative from Winwing MCDU (+ define color there too)
 - 0.1.0 - First distribuable version
