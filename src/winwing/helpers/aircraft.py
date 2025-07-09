@@ -6,7 +6,7 @@ import glob
 import logging
 
 from abc import ABC
-from typing import Tuple, Dict, Any, Set
+from typing import Tuple, Dict, Any, Set, List
 
 from ruamel.yaml import YAML
 
@@ -35,7 +35,7 @@ class Aircraft(ABC):
         return f"{icao}::{author}"
 
     @staticmethod
-    def new(author: str, icao: str):
+    def new(author: str, icao: str, extension_paths: List[str] = []):
         """Create aircraft for supplied (author, icao)
 
         If no device aircraft can be found, returns None
@@ -61,7 +61,7 @@ class Aircraft(ABC):
         adapter = reqacf[0]
         logger.info(f"aircraft adapter for {icao} by {author} is {adapter}")
         aircraft = adapter(author=author, icao=icao)
-        aircrafts_data = Aircraft.list()
+        aircrafts_data = Aircraft.list(extension_paths=extension_paths)
         if key not in aircrafts_data:
             logger.warning(f"no configuration data for {icao} by {author}")
         else:
@@ -71,20 +71,21 @@ class Aircraft(ABC):
         return aircraft
 
     @staticmethod
-    def list() -> Dict[Tuple[str, str], Dict]:
+    def list(extension_paths: List[str] = []) -> Dict[Tuple[str, str], Dict]:
         aircrafts = {}
         path = os.path.join(os.path.dirname(__file__), "..", "assets")
-        files = glob.glob(os.path.join(path, ACF_FILE_GLOB))
-        for file in files:
-            fn = os.path.join(path, file)
-            with open(fn, "r") as fp:
-                data = yaml.load(fp)
-                if type(data) is dict:
-                    author = data.get("author")
-                    icao = data.get("icao")
-                    if author is not None and icao is not None:
-                        data["__filename__"] = fn
-                        aircrafts[Aircraft.key(author=author, icao=icao)] = data
+        extension_paths.append(path)
+        for folder in extension_paths:
+            files = glob.glob(os.path.join(folder, "**", ACF_FILE_GLOB), recursive=True)
+            for file in files:
+                with open(file, "r") as fp:
+                    data = yaml.load(fp)
+                    if type(data) is dict:
+                        author = data.get("author")
+                        icao = data.get("icao")
+                        if author is not None and icao is not None:
+                            data["__filename__"] = file
+                            aircrafts[Aircraft.key(author=author, icao=icao)] = data
 
         if len(aircrafts) > 0:
 
@@ -114,7 +115,7 @@ class Aircraft(ABC):
         try:
             stack.extend(Aircraft.__subclasses__())
         except (TypeError, AttributeError) as ex:
-            raise ValueError("Invalid class" + repr(WW.WinwingDevice)) from ex
+            raise ValueError("Invalid class" + repr(Aircraft)) from ex
         while stack:
             sub = stack.pop()
             subclasses.add(sub)
@@ -122,6 +123,7 @@ class Aircraft(ABC):
                 stack.extend(s for s in sub.__subclasses__() if s not in subclasses)
             except (TypeError, AttributeError):
                 continue
+        print(">>>", list(subclasses))
         return list(subclasses)
 
     @classmethod

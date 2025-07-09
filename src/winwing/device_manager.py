@@ -62,7 +62,9 @@ class DeviceManager:
         devices = []
         for dev in hid.enumerate():
             if dev["vendor_id"] in WW.WinwingDevice.WINWING_VENDOR_IDS:
-                devices.append(DeviceManager.new(dev["vendor_id"], dev["product_id"]))
+                device = DeviceManager.new(dev["vendor_id"], dev["product_id"])
+                if device is not None:
+                    devices.append(device)
         return devices
 
     @staticmethod

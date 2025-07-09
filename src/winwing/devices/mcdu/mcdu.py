@@ -64,7 +64,9 @@ class MCDU(WinwingDevice):
         # self.api = ws_api(host=kwargs.get("host", "127.0.0.1"), port=kwargs.get("port", "8086"))
         self.api = None  # ws_api(host="192.168.1.140", port="8080")
 
+        self._extension_paths = []
         self.VALID_AIRCRAFTS = Aircraft.list()
+
         self.aircraft = None
         self.aircraft_config = None
         self._datarefs = {}
@@ -134,6 +136,10 @@ class MCDU(WinwingDevice):
     def set_aircraft_configuration(self, filename):
         self.aircraft_config = filename
 
+    def set_extension_paths(self, extension_paths: List[str]):
+        self._extension_paths = extension_paths
+        self.VALID_AIRCRAFTS = Aircraft.list(extension_paths=extension_paths)
+
     def aircraft_from_configuration_file(self):
         logger.debug("..loading aircraft from configuration file..")
         a = Aircraft.load_from_file(filename=self.aircraft_config)
@@ -164,7 +170,7 @@ class MCDU(WinwingDevice):
 
         logger.debug("loading aircraft..")
         if not self.aircraft_forced:
-            self.aircraft = Aircraft.new(author=self.author, icao=self.icao)
+            self.aircraft = Aircraft.new(author=self.author, icao=self.icao, extension_paths=self._extension_paths)
         else:
             self.aircraft = self.aircraft_from_configuration_file()
             if self.aircraft is None:
