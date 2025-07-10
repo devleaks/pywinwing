@@ -6,6 +6,27 @@ This script allows Winwings devices to work with Laminar Research X-Plane Flight
 
 # Installation
 
+## HID Library
+
+You must first install a USB HID library.
+The installation of this library depends on your operating system.
+We recommand using the [libhidapi](https://github.com/libusb/hidapi)
+widely used and available.
+On MacOS, the library is installed by [brew](https://brew.sh) or
+port package manager like
+
+```sh
+brew install libhidapi
+```
+
+This library will be used by a python package.
+
+pywinwing uses [this](https://github.com/apmorton/pyhidapi) python package
+which appears to be a simple python wrapper around essential functions.
+Nothing more, nothing less. Couldn't be simpler.
+
+## Python Application
+
 It is advisable to create and use a dedicated python environment.
 
 ```sh
