@@ -22,19 +22,22 @@ in a terminal window.
 ```
 $ winwing-cli --help
 
-usage: winwing-cli [-h] [--version] [-v] [-l] [-a] [--host HOST] [--port PORT] [--aircraft acf.yaml]
+usage: winwing-cli [-h] [--version] [-v] [-l] [-a] [--use-beacon] [--host HOST] [--port PORT] [--aircraft acf.yaml] [--extension ext_dir [ext_dir ...]]
 
 Winwing Devices for X-Plane
 
 options:
-  -h, --help           show this help message and exit
-  --version            show version information and exit
-  -v, --verbose        show more information
-  -l, --list           list Wingwing devices connected to the system
-  -a, --list-all       list all HID devices connected to the system
-  --host HOST          Host IP name or address for X-Plane Web API
-  --port PORT          TCP port for X-Plane Web API
-  --aircraft acf.yaml  Use this aircraft configuration file
+  -h, --help            show this help message and exit
+  --version             shows version information and exit
+  -v, --verbose         shows more information
+  -l, --list            lists Wingwing devices connected to the system
+  -a, --list-all        lists all HID devices connected to the system
+  --use-beacon          REMOTE USE ONLY - attempt to use X-Plane UDP beacon to discover network address
+  --host HOST           REMOTE USE ONLY - host IP name or address for X-Plane Web API
+  --port PORT           TCP port for X-Plane Web API
+  --aircraft acf.yaml   DEVELOPER ONLY - uses this aircraft configuration file
+  --extension ext_dir [ext_dir ...]
+                        DEVELOPER ONLY - adds extension folders to application
 ```
 
 
