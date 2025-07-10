@@ -1,0 +1,10 @@
+author: Alex Unruh
+icao: B738
+# variant: none
+mcdu-units: [1, 2]
+keys: []
+display-datarefs:
+  - sim/cockpit2/clock_timer/zulu_time_hours
+  - sim/cockpit2/clock_timer/zulu_time_minutes
+  - sim/cockpit2/clock_timer/zulu_time_seconds
+datarefs: []

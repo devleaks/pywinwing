@@ -3,9 +3,8 @@
 import logging
 from typing import Set
 import winwing
-from winwing.helpers.aircraft import Aircraft
+from winwing.devices.mcdu.mcdu_aircraft import MCDUAircraft
 from winwing.devices.mcdu.constant import COLORS
-from winwing.devices.mcdu.device import SPECIAL_CHARACTERS
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -20,16 +19,16 @@ PAGE_BYTES_PER_CHAR = 3
 PAGE_BYTES_PER_LINE = PAGE_CHARS_PER_LINE * PAGE_BYTES_PER_CHAR
 PAGE_BYTES_PER_PAGE = PAGE_BYTES_PER_LINE * PAGE_LINES
 
-class B738(Aircraft):
+class B738(MCDUAircraft):
 
     VERSION = "7.3.8"
 
     AIRCRAFT_KEYS = [
-        Aircraft.key(icao="B738", author="Alex Unruh"),
+        MCDUAircraft.key(icao="B738", author="Alex Unruh"),
     ]
 
     def __init__(self, author: str, icao: str, variant: str | None = None) -> None:
-        Aircraft.__init__(self, author=author, icao=icao, variant=variant)
+        MCDUAircraft.__init__(self, author=author, icao=icao, variant=variant)
         self._datarefs = {}
 
     @property
@@ -50,6 +49,13 @@ class B738(Aircraft):
 
     def get_mcdu_unit(self, dataref) -> int:
         return 1
+
+    def encode_bytes(self, dataref, value) -> str | bytes:
+        try:
+            return value.decode("ascii").replace("\u0000", "")
+        except:
+            logger.warning(f"cannot decode bytes for {dataref.name} (encoding=ascii)", exc_info=True)
+        return value
 
     def show_page(self, mcdu_unit) -> list:
         page = []
