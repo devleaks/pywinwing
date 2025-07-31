@@ -16,8 +16,6 @@ import chardet
 from winwing.helpers.aircraft import Aircraft
 from ..winwing import WinwingDevice
 from .device import SPECIAL_CHARACTERS, MCDUDevice, MCDU_DEVICE_MASKS
-from .acf_toliss import ToLissAircraft
-from .acf_laminar import LaminarAircraft
 from .constant import (
     ButtonType,
     DrefType,
@@ -52,7 +50,7 @@ class MCDU(WinwingDevice):
     """
 
     WINWING_PRODUCT_IDS = [47926, 47930, 47934]
-    VERSION = "0.9.1"
+    VERSION = "0.9.2"
 
     def __init__(self, vendor_id: int, product_id: int, **kwargs):
         WinwingDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
