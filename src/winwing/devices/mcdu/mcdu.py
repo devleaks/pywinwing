@@ -22,6 +22,8 @@ from .constant import (
     ICAO_DATAREF,
     AUTHOR_DATAREF,
     MCDU_ANNUNCIATORS,
+    MCDU_BRIGHTNESS,
+    BRIGHTNESS_AUTO_ADJUST,
     COLORS,
     MCDU_STATUS,
     PAGE_LINES,
@@ -38,6 +40,18 @@ logger = logging.getLogger(__name__)
 MAX_WARNING_COUNT = 3
 SENSOR_CHECK_FREQUENCY = 20
 
+
+ALWAYS_REPORTS = [
+    {
+        "report-type": "simulator-value-change",
+        "simulator-value-name": "sim/aircraft/view/acf_author",
+        "action": "change-aircraft"
+    },{
+        "report-type": "simulator-value-change",
+        "simulator-value-name": "sim/aircraft/view/acf_ICAO",
+        "action": "change-aircraft"
+    }
+]
 
 class MCDU(WinwingDevice):
     """Winwing MCDU Coordinator
@@ -80,20 +94,19 @@ class MCDU(WinwingDevice):
 
         self.device_reports = []
         self._device_reports_by_id = {}
-        self.simulator_reports = []
-        self._simulator_reports_by_id = {}
+        self.simulator_reports = [MCDUSimulatorReport.new(config=s, device=self) for s in ALWAYS_REPORTS]
+        self._simulator_reports_by_id = {s.key: s for s in self.simulator_reports}
 
         self.display = MCDUDisplay(device=self.device)
         self.brightness = {}
+        self.sensors = {"left": 0, "right": 0}
 
         # Working variables
         self._warned = False
         self._buttons_press_event = [0] * len(self.device_reports)
         self._buttons_release_event = [0] * len(self.device_reports)
         self._last_large_button_mask = 0
-        self._left_sensor = 0  # sensors values runs from 0..255
-        self._right_sensor = 0
-        self._sensor_delta = 256
+        self._sensor_delta = 200
         self._reads = 0
         self.init()
 
@@ -515,17 +528,34 @@ class MCDU(WinwingDevice):
     def do_sensors(self, data_in):
         w = False
         v = 256 * int(data_in[18]) + int(data_in[17])
-        dl = v - self._left_sensor
+        dl = v - self.sensors["left"]
         if abs(dl) > self._sensor_delta:
             w = True
-            self._left_sensor = v
+            self.sensors["left"] = v
         v = 256 * int(data_in[20]) + int(data_in[19])
-        dr = v - self._right_sensor
+        dr = v - self.sensors["right"]
         if abs(dr) > self._sensor_delta:
             w = True
-            self._right_sensor = v
-        if w:
-            logger.debug(f"sensors: left {self._left_sensor} ({dl}), right {self._right_sensor} ({dr})")
+            self.sensors["right"] = v
+        if not w:
+            return
+        logger.debug(f"sensors: left {self.sensors['left']} ({dl}), right {self.sensors['right']} ({dr})")
+        if not BRIGHTNESS_AUTO_ADJUST:
+            return
+        # Auto adjust back light brightness
+        GLOBAL_BRIGHTNESS = "_global"
+        avg = int((self.sensors["left"] + self.sensors["right"]) / 2)
+        maxlevel = 100000
+        for r in BRIGHTNESS_AUTO_ADJUST:
+            if maxlevel > avg >= r[0]:
+                if self.brightness.get(GLOBAL_BRIGHTNESS, "") != r[3]:
+                    self.device.set_brightness(backlight=MCDU_BRIGHTNESS.BACKLIGHT, brightness=r[1])
+                    self.device.set_brightness(backlight=MCDU_BRIGHTNESS.SCREEN_BACKLIGHT, brightness=r[2])
+                    logger.info(f"brightness auto adjust to {r[3]}")
+                    logger.debug(f"brightness auto adjust: {r[3]} ({avg}): keyboard: {r[1]}, LCD: {r[2]}")
+                    self.brightness[GLOBAL_BRIGHTNESS] = r[3]
+                    break
+            maxlevel = r[0]
 
     def set_annunciator(self, annunciator: MCDU_ANNUNCIATORS, on: bool = True):
         self.device.set_led(led=annunciator, on=on)

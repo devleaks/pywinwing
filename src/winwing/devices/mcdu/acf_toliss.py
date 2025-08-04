@@ -300,9 +300,9 @@ class ToLissAircraft(MCDUAircraft):
                 dref = sim_report.get("simulator-value-name", "")
                 if ToLissAircraft.is_display_dataref(dref):
                     for unit in self.mcdu_units:
+                        if unit == 1:  # assumes config use MCDU unit 1...
+                            continue
                         add_report = sim_report.copy()
                         add_report["simulator-value-name"] = self.set_mcdu_unit(str_in=dref, mcdu_unit=unit)
                         newrpts.append(add_report)
-            elif sim_report.get("report-type", "") == "simulator-value-change":
-                dref = sim_report.get("simulator-value-name", "")
         return simulator_reports + newrpts

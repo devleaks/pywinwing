@@ -34,6 +34,20 @@ class MCDU_BRIGHTNESS(Enum):
     SCREEN_BACKLIGHT = 1  # 0 .. 255
 
 
+class MCDU_BRIGHTNESS_NAME(Enum):
+    BACKLIGHT = "KeyboardBacklight"
+    SCREEN_BACKLIGHT = "LCDBacklight"
+
+
+BRIGHTNESS_AUTO_ADJUST = [  # set to False to suppress auto-adjust
+    (1000, 0, 255, "bright"),
+    (600, 64, 224, "high"),
+    (400, 128, 196, "medium"),
+    (200, 196, 164, "low"),
+    (100, 255, 128, "dark"),
+]
+
+
 class MCDU_ANNUNCIATORS(Enum):
     FAIL = 8
     FM = 9

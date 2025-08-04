@@ -716,7 +716,7 @@ simulator-reports:
   simulator-value-name: AirbusFBW/PanelBrightnessLevel
   # this is the brightness of the backlight of the MCDU keyboard
   action: set-device-value
-  device-value-name: Backlight
+  device-value-name: KeyboardBacklight
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/DUBrightness[6]
   # this is the brightness of the backlight of the MCDU captain screen
@@ -727,3 +727,9 @@ simulator-reports:
   # this is the brightness of the backlight of the MCDU first officer screen
   action: set-device-value
   device-value-name: LCDBacklight
+- report-type: simulator-value-change
+  simulator-value-name: sim/aircraft/view/acf_author
+  action: change-aircraft
+- report-type: simulator-value-change
+  simulator-value-name: sim/aircraft/view/acf_ICAO
+  action: change-aircraft

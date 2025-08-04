@@ -461,8 +461,15 @@ simulator-reports:
 - report-type: simulator-value-change
   name: sim/cockpit2/switches/instrument_brightness_ratio[13]
   action: set-device-value
-  device-value-name: DisplayBrightness
+  device-value-name: LCDBacklight
 - report-type: simulator-value-change
   name: sim/cockpit2/switches/instrument_brightness_ratio[6]
   action: set-device-value
   device-value-name: KeyboardBacklight
+- report-type: simulator-value-change
+  simulator-value-name: sim/aircraft/view/acf_author
+  action: change-aircraft
+- report-type: simulator-value-change
+  simulator-value-name: sim/aircraft/view/acf_ICAO
+  action: change-aircraft
+

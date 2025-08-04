@@ -7,7 +7,7 @@ from winwing.devices.winwing import WinwingDevice
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
-from .constant import ICAO_DATAREF, AUTHOR_DATAREF, MCDU_BRIGHTNESS
+from .constant import ICAO_DATAREF, AUTHOR_DATAREF, MCDU_BRIGHTNESS, MCDU_BRIGHTNESS_NAME
 from ...helpers.report import DeviceAction, SimulatorAction, DeviceReport, SimulatorReport
 
 
@@ -84,10 +84,10 @@ class SetDeviceValue(MCDUDeviceAction):
 
         def doit(v, name):
             v100 = int(round(100 * (v + 1) / 256))
-            if name == "Backlight":
+            if name == MCDU_BRIGHTNESS_NAME.BACKLIGHT.value:
                 mcdu.device.set_brightness(backlight=MCDU_BRIGHTNESS.BACKLIGHT, brightness=v)
                 logger.info(f"{self.name} set device backlight to {v100}%")
-            elif name == "LCDBacklight":
+            elif name == MCDU_BRIGHTNESS_NAME.SCREEN_BACKLIGHT.value:
                 mcdu.device.set_brightness(backlight=MCDU_BRIGHTNESS.SCREEN_BACKLIGHT, brightness=v)
                 logger.info(f"{self.name} set device screen backlight to {v100}%")
             else:
