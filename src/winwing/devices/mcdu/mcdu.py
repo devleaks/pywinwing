@@ -18,13 +18,10 @@ from ..winwing import WinwingDevice
 from .device import SPECIAL_CHARACTERS, MCDUDevice, MCDU_DEVICE_MASKS
 from .report import MCDUDeviceReport, MCDUSimulatorReport
 from .constant import (
-    ButtonType,
-    DrefType,
     AIRCRAFT_DATAREFS,
     ICAO_DATAREF,
     AUTHOR_DATAREF,
     MCDU_ANNUNCIATORS,
-    MCDU_BRIGHTNESS,
     COLORS,
     MCDU_STATUS,
     PAGE_LINES,
@@ -51,7 +48,7 @@ class MCDU(WinwingDevice):
     """
 
     WINWING_PRODUCT_IDS = [47926, 47930, 47934]
-    VERSION = "0.9.2"
+    VERSION = "0.10.0"
 
     def __init__(self, vendor_id: int, product_id: int, **kwargs):
         WinwingDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
@@ -456,52 +453,10 @@ class MCDU(WinwingDevice):
         report.activate(mcdu=self, value=value)
         return
 
-        # Special datarefs for aircraft identification
-        if dataref == ICAO_DATAREF or dataref == AUTHOR_DATAREF:
-            if self.aircraft is not None:
-                if dataref == ICAO_DATAREF:
-                    self.new_icao = value
-                    logger.debug(f"got new icao: {dataref}={value}")
-                if dataref == AUTHOR_DATAREF:
-                    self.new_author = value
-                    logger.debug(f"got new author: {dataref}={value}")
-                if self.new_icao is not None and self.new_author is not None:  # not thread safe
-                    logger.debug("got new icao and author, changing aircraft")
-                    self.change_aircraft(new_author=self.new_author, new_icao=self.new_icao)
-                    self.new_icao = None
-                    self.new_author = None
-            # else, aircraft not loaded yet, will be loaded by wait_for_resources()
-
-        # Special datarefs for brightness control
-        if "Brightness" in dataref:
-            if "DUBrightness" in dataref and value <= 1:
-                # brightness is in 0..1, we need 0..255
-                value = int(value * 255)
-            if dataref not in self.brightness:
-                self.brightness[dataref] = value
-            elif value != self.brightness[dataref]:
-                self.brightness[dataref] = value
-                self.set_brightness(dataref, value)
-                logger.debug(f"set brightness: {dataref}={value}")
-            if "PanelBrightness" in dataref and value <= 1:
-                # brightness is in 0..1, we need 0..255
-                value = int(value * 255)
-            if dataref not in self.brightness:
-                self.brightness[dataref] = value
-            elif value != self.brightness[dataref]:
-                self.brightness[dataref] = value
-                self.set_brightness(dataref, value)
-                logger.debug(f"set brightness: {dataref}={value}")
-
         # MCDU text datarefs
         if self.aircraft is None:
             logger.warning("no aircraft")
             return
-
-        if not self.aircraft.is_display_dataref(dataref):
-            logger.debug(f"not a display dataref {dataref}")
-            return
-        self.display.variable_changed(dataref=dataref, value=value)
 
     def do_keypress(self, key_id: int, pressed: bool):
         report = self._device_reports_by_id.get(key_id)
@@ -571,20 +526,6 @@ class MCDU(WinwingDevice):
             self._right_sensor = v
         if w:
             logger.debug(f"sensors: left {self._left_sensor} ({dl}), right {self._right_sensor} ({dr})")
-
-    def set_brightness(self, dataref, value):
-        bl = list(filter(lambda x: x.name == dataref, self.device_reports))
-        if len(bl) == 1:
-            b = bl[0]
-            if b is not None:
-                if b.led is None:
-                    logger.debug(f"dataref {dataref} not led")
-                    return
-                v = max(0, min(value, 255))
-                logger.debug(f"led: {b.led}, value: {v}")
-                self.device.set_brightness(backlight=b.led, brightness=int(v))
-        else:
-            logger.warning(f"dataref {dataref} not found")
 
     def set_annunciator(self, annunciator: MCDU_ANNUNCIATORS, on: bool = True):
         self.device.set_led(led=annunciator, on=on)

@@ -5,6 +5,8 @@ import logging
 import re
 from typing import Set, List
 
+from winwing.devices import mcdu
+
 from .mcdu_aircraft import MCDUAircraft
 from .device import SPECIAL_CHARACTERS
 from .constant import (
@@ -66,6 +68,10 @@ class ToLissAircraft(MCDUAircraft):
 
     def get_mcdu_unit(self, dataref) -> int:
         mcdu_unit = -1
+        if dataref == "AirbusFBW/DUBrightness[6]":  # MCDU screen brightness unit 1
+            return 1
+        elif dataref == "AirbusFBW/DUBrightness[7]":  # MCDU screen brightness unit 2
+            return 2
         try:
             m = None
             if "VertSlewKeys" in dataref:
@@ -82,6 +88,11 @@ class ToLissAircraft(MCDUAircraft):
         return mcdu_unit
 
     def set_mcdu_unit(self, str_in: str, mcdu_unit: int):
+        if str_in.startswith("AirbusFBW/DUBrightness"):
+            if mcdu_unit == 1:
+                return "AirbusFBW/DUBrightness[6]"
+            elif mcdu_unit == 2:
+                return "AirbusFBW/DUBrightness[7]"
         if mcdu_unit == 2:
             return re.sub(r"MCDU[123]", "MCDU2", str_in)
         elif mcdu_unit == 3:
@@ -292,4 +303,6 @@ class ToLissAircraft(MCDUAircraft):
                         add_report = sim_report.copy()
                         add_report["simulator-value-name"] = self.set_mcdu_unit(str_in=dref, mcdu_unit=unit)
                         newrpts.append(add_report)
+            elif sim_report.get("report-type", "") == "simulator-value-change":
+                dref = sim_report.get("simulator-value-name", "")
         return simulator_reports + newrpts

@@ -222,11 +222,11 @@ class Aircraft(ABC):
         return set(datarefs)
 
     def datarefs(self) -> Set[str]:
-        """Returns accessoriy datarefs for other purposes
+        """Returns all datarefs used by this aircraft configuration and that may be requested to the simulator
 
         Returns
 
-            List[str]: list of datarefs used for display
+            List[str]: list of all datarefs used by this configuration
 
 
         """
