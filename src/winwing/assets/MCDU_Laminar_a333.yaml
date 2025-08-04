@@ -2,112 +2,467 @@ author: Alex Unruh, Rodrigo Fernandez, Massimo Durando, Jim Gregory, Marco Auer
 icao: A333
 # variant: none
 mcdu-units: [1, 2]
-keys:
-    # [index, label, dataref, dataref_type, button_type, led]
-    - [0, LSK1L, sim/FMS/ls_1l, command, press, none]
-    - [1, LSK2L, sim/FMS/ls_2l, command, press, none]
-    - [2, LSK3L, sim/FMS/ls_3l, command, press, none]
-    - [3, LSK4L, sim/FMS/ls_4l, command, press, none]
-    - [4, LSK5L, sim/FMS/ls_5l, command, press, none]
-    - [5, LSK6L, sim/FMS/ls_6l, command, press, none]
-    - [6, LSK1R, sim/FMS/ls_1r, command, press, none]
-    - [7, LSK2R, sim/FMS/ls_2r, command, press, none]
-    - [8, LSK3R, sim/FMS/ls_3r, command, press, none]
-    - [9, LSK4R, sim/FMS/ls_4r, command, press, none]
-    - [10, LSK5R, sim/FMS/ls_5r, command, press, none]
-    - [11, LSK6R, sim/FMS/ls_6r, command, press, none]  # 0x800
-    - [12, DIRTO, sim/FMS/dir_intc, command, press, none]
-    - [13, PROG, sim/FMS/prog, command, press, none]
-    - [14, PERF, sim/FMS/perf, command, press, none]
-    - [15, INIT, sim/FMS/index, command, press, none]
-    - [16, DATA, sim/FMS/data, command, press, none]
-    - [17, MENU1, none, command, press, none]  # 17 emtpy, map to open ICSC screen
-    - [18, BRT, laminar/A333/buttons/fms1_brightness_up, command, press, none]
-    - [19, FPLN, sim/FMS/fpln, command, press, none]
-    - [20, RADNAV, sim/FMS/navrad, command, press, none]
-    - [21, FUEL, sim/FMS/fuel_pred, command, press, none]
-    - [22, SEC-FPLN, none, command, press, none]
-    - [23, ATC, none, command, press, none]
-    - [24, MENU, sim/FMS/menu, command, press, none]
-    - [25, DIM, laminar/A333/buttons/fms1_brightness_dn, command, press, none]
-    - [26, AIRPORT, sim/FMS/airport, command, press, none]
-    - [27, MENU2, none, command, press, none]  # 27 empty, map to switch MCDU
-    - [28, SLEW_LEFT, sim/FMS/prev, command, press, none]
-    - [29, SLEW_UP, sim/FMS/up, command, press, none]
-    - [30, SLEW_RIGHT, sim/FMS/next, command, press, none]
-    - [31, SLEW_DOWN, sim/FMS/down, command, press, none]
-    - [32, KEY1, sim/FMS/key_1, command, press, none]
-    - [33, KEY2, sim/FMS/key_2, command, press, none]
-    - [34, KEY3, sim/FMS/key_3, command, press, none]
-    - [35, KEY4, sim/FMS/key_4, command, press, none]
-    - [36, KEY5, sim/FMS/key_5, command, press, none]
-    - [37, KEY6, sim/FMS/key_6, command, press, none]
-    - [38, KEY7, sim/FMS/key_7, command, press, none]
-    - [39, KEY8, sim/FMS/key_8, command, press, none]
-    - [40, KEY9, sim/FMS/key_9, command, press, none]
-    - [41, DOT, sim/FMS/key_period, command, press, none]
-    - [42, KEY0, sim/FMS/key_0, command, press, none]
-    - [43, PLUSMINUS, sim/FMS/key_minus, command, press, none]
-    - [44, KEYA, sim/FMS/key_A, command, press, none]
-    - [45, KEYB, sim/FMS/key_B, command, press, none]
-    - [46, KEYC, sim/FMS/key_C, command, press, none]
-    - [47, KEYD, sim/FMS/key_D, command, press, none]
-    - [48, KEYE, sim/FMS/key_E, command, press, none]
-    - [49, KEYF, sim/FMS/key_F, command, press, none]
-    - [50, KEYG, sim/FMS/key_G, command, press, none]
-    - [51, KEYH, sim/FMS/key_H, command, press, none]
-    - [52, KEYI, sim/FMS/key_I, command, press, none]
-    - [53, KEYJ, sim/FMS/key_J, command, press, none]
-    - [54, KEYK, sim/FMS/key_K, command, press, none]
-    - [55, KEYL, sim/FMS/key_L, command, press, none]
-    - [56, KEYM, sim/FMS/key_M, command, press, none]
-    - [57, KEYN, sim/FMS/key_N, command, press, none]
-    - [58, KEYO, sim/FMS/key_O, command, press, none]
-    - [59, KEYP, sim/FMS/key_P, command, press, none]
-    - [60, KEYQ, sim/FMS/key_Q, command, press, none]
-    - [61, KEYR, sim/FMS/key_R, command, press, none]
-    - [62, KEYS, sim/FMS/key_S, command, press, none]
-    - [63, KEYT, sim/FMS/key_T, command, press, none]
-    - [64, KEYU, sim/FMS/key_U, command, press, none]
-    - [65, KEYV, sim/FMS/key_V, command, press, none]
-    - [66, KEYW, sim/FMS/key_W, command, press, none]
-    - [67, KEYX, sim/FMS/key_X, command, press, none]
-    - [68, KEYY, sim/FMS/key_Y, command, press, none]
-    - [69, KEYZ, sim/FMS/key_Z, command, press, none]
-    - [70, SLASH, sim/FMS/key_slash, command, press, none]
-    - [71, SPACE, sim/FMS/key_space, command, press, none]
-    - [72, OVERFLY, sim/FMS/key_overfly, command, press, none]
-    - [73, Clear, sim/FMS/key_clear, command, press, none]
-    # Non existant buttons
-display-datarefs:
-    - sim/cockpit2/radios/indicators/fms_cdu1_text_line0
-    - sim/cockpit2/radios/indicators/fms_cdu1_text_line1
-    - sim/cockpit2/radios/indicators/fms_cdu1_text_line2
-    - sim/cockpit2/radios/indicators/fms_cdu1_text_line3
-    - sim/cockpit2/radios/indicators/fms_cdu1_text_line4
-    - sim/cockpit2/radios/indicators/fms_cdu1_text_line5
-    - sim/cockpit2/radios/indicators/fms_cdu1_text_line6
-    - sim/cockpit2/radios/indicators/fms_cdu1_text_line7
-    - sim/cockpit2/radios/indicators/fms_cdu1_text_line8
-    - sim/cockpit2/radios/indicators/fms_cdu1_text_line9
-    - sim/cockpit2/radios/indicators/fms_cdu1_text_line10
-    - sim/cockpit2/radios/indicators/fms_cdu1_text_line11
-    - sim/cockpit2/radios/indicators/fms_cdu1_text_line12
-    - sim/cockpit2/radios/indicators/fms_cdu1_text_line13
-    - sim/cockpit2/radios/indicators/fms_cdu1_style_line0
-    - sim/cockpit2/radios/indicators/fms_cdu1_style_line1
-    - sim/cockpit2/radios/indicators/fms_cdu1_style_line2
-    - sim/cockpit2/radios/indicators/fms_cdu1_style_line3
-    - sim/cockpit2/radios/indicators/fms_cdu1_style_line4
-    - sim/cockpit2/radios/indicators/fms_cdu1_style_line5
-    - sim/cockpit2/radios/indicators/fms_cdu1_style_line6
-    - sim/cockpit2/radios/indicators/fms_cdu1_style_line7
-    - sim/cockpit2/radios/indicators/fms_cdu1_style_line8
-    - sim/cockpit2/radios/indicators/fms_cdu1_style_line9
-    - sim/cockpit2/radios/indicators/fms_cdu1_style_line10
-    - sim/cockpit2/radios/indicators/fms_cdu1_style_line11
-    - sim/cockpit2/radios/indicators/fms_cdu1_style_line12
-    - sim/cockpit2/radios/indicators/fms_cdu1_style_line13
-datarefs:
-    - sim/cockpit2/switches/instrument_brightness_ratio[13]
-    - sim/cockpit2/switches/instrument_brightness_ratio[6]
+device-reports:
+- report-type: key-press
+  key-index: 0
+  key-name: LSK1L
+  action: execute-simulator-command
+  simulator-command: sim/FMS/ls_1l
+- report-type: key-press
+  key-index: 1
+  key-name: LSK2L
+  action: execute-simulator-command
+  simulator-command: sim/FMS/ls_2l
+- report-type: key-press
+  key-index: 2
+  key-name: LSK3L
+  action: execute-simulator-command
+  simulator-command: sim/FMS/ls_3l
+- report-type: key-press
+  key-index: 3
+  key-name: LSK4L
+  action: execute-simulator-command
+  simulator-command: sim/FMS/ls_4l
+- report-type: key-press
+  key-index: 4
+  key-name: LSK5L
+  action: execute-simulator-command
+  simulator-command: sim/FMS/ls_5l
+- report-type: key-press
+  key-index: 5
+  key-name: LSK6L
+  action: execute-simulator-command
+  simulator-command: sim/FMS/ls_6l
+- report-type: key-press
+  key-index: 6
+  key-name: LSK1R
+  action: execute-simulator-command
+  simulator-command: sim/FMS/ls_1r
+- report-type: key-press
+  key-index: 7
+  key-name: LSK2R
+  action: execute-simulator-command
+  simulator-command: sim/FMS/ls_2r
+- report-type: key-press
+  key-index: 8
+  key-name: LSK3R
+  action: execute-simulator-command
+  simulator-command: sim/FMS/ls_3r
+- report-type: key-press
+  key-index: 9
+  key-name: LSK4R
+  action: execute-simulator-command
+  simulator-command: sim/FMS/ls_4r
+- report-type: key-press
+  key-index: 10
+  key-name: LSK5R
+  action: execute-simulator-command
+  simulator-command: sim/FMS/ls_5r
+- report-type: key-press
+  key-index: 11
+  key-name: LSK6R
+  action: execute-simulator-command
+  simulator-command: sim/FMS/ls_6r
+- report-type: key-press
+  key-index: 12
+  key-name: DIRTO
+  action: execute-simulator-command
+  simulator-command: sim/FMS/dir_intc
+- report-type: key-press
+  key-index: 13
+  key-name: PROG
+  action: execute-simulator-command
+  simulator-command: sim/FMS/prog
+- report-type: key-press
+  key-index: 14
+  key-name: PERF
+  action: execute-simulator-command
+  simulator-command: sim/FMS/perf
+- report-type: key-press
+  key-index: 15
+  key-name: INIT
+  action: execute-simulator-command
+  simulator-command: sim/FMS/index
+- report-type: key-press
+  key-index: 16
+  key-name: DATA
+  action: execute-simulator-command
+  simulator-command: sim/FMS/data
+- report-type: key-press
+  key-index: 17
+  key-name: MENU1
+  action: execute-simulator-command
+  simulator-command: none
+- report-type: key-press
+  key-index: 18
+  key-name: BRT
+  action: execute-simulator-command
+  simulator-command: laminar/A333/buttons/fms1_brightness_up
+- report-type: key-press
+  key-index: 19
+  key-name: FPLN
+  action: execute-simulator-command
+  simulator-command: sim/FMS/fpln
+- report-type: key-press
+  key-index: 20
+  key-name: RADNAV
+  action: execute-simulator-command
+  simulator-command: sim/FMS/navrad
+- report-type: key-press
+  key-index: 21
+  key-name: FUEL
+  action: execute-simulator-command
+  simulator-command: sim/FMS/fuel_pred
+- report-type: key-press
+  key-index: 22
+  key-name: SEC-FPLN
+  action: execute-simulator-command
+  simulator-command: none
+- report-type: key-press
+  key-index: 23
+  key-name: ATC
+  action: execute-simulator-command
+  simulator-command: none
+- report-type: key-press
+  key-index: 24
+  key-name: MENU
+  action: execute-simulator-command
+  simulator-command: sim/FMS/menu
+- report-type: key-press
+  key-index: 25
+  key-name: DIM
+  action: execute-simulator-command
+  simulator-command: laminar/A333/buttons/fms1_brightness_dn
+- report-type: key-press
+  key-index: 26
+  key-name: AIRPORT
+  action: execute-simulator-command
+  simulator-command: sim/FMS/airport
+- report-type: key-press
+  key-index: 27
+  key-name: MENU2
+  action: execute-simulator-command
+  simulator-command: none
+- report-type: key-press
+  key-index: 28
+  key-name: SLEW_LEFT
+  action: execute-simulator-command
+  simulator-command: sim/FMS/prev
+- report-type: key-press
+  key-index: 29
+  key-name: SLEW_UP
+  action: execute-simulator-command
+  simulator-command: sim/FMS/up
+- report-type: key-press
+  key-index: 30
+  key-name: SLEW_RIGHT
+  action: execute-simulator-command
+  simulator-command: sim/FMS/next
+- report-type: key-press
+  key-index: 31
+  key-name: SLEW_DOWN
+  action: execute-simulator-command
+  simulator-command: sim/FMS/down
+- report-type: key-press
+  key-index: 32
+  key-name: KEY1
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_1
+- report-type: key-press
+  key-index: 33
+  key-name: KEY2
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_2
+- report-type: key-press
+  key-index: 34
+  key-name: KEY3
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_3
+- report-type: key-press
+  key-index: 35
+  key-name: KEY4
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_4
+- report-type: key-press
+  key-index: 36
+  key-name: KEY5
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_5
+- report-type: key-press
+  key-index: 37
+  key-name: KEY6
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_6
+- report-type: key-press
+  key-index: 38
+  key-name: KEY7
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_7
+- report-type: key-press
+  key-index: 39
+  key-name: KEY8
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_8
+- report-type: key-press
+  key-index: 40
+  key-name: KEY9
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_9
+- report-type: key-press
+  key-index: 41
+  key-name: DOT
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_period
+- report-type: key-press
+  key-index: 42
+  key-name: KEY0
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_0
+- report-type: key-press
+  key-index: 43
+  key-name: PLUSMINUS
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_minus
+- report-type: key-press
+  key-index: 44
+  key-name: KEYA
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_A
+- report-type: key-press
+  key-index: 45
+  key-name: KEYB
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_B
+- report-type: key-press
+  key-index: 46
+  key-name: KEYC
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_C
+- report-type: key-press
+  key-index: 47
+  key-name: KEYD
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_D
+- report-type: key-press
+  key-index: 48
+  key-name: KEYE
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_E
+- report-type: key-press
+  key-index: 49
+  key-name: KEYF
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_F
+- report-type: key-press
+  key-index: 50
+  key-name: KEYG
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_G
+- report-type: key-press
+  key-index: 51
+  key-name: KEYH
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_H
+- report-type: key-press
+  key-index: 52
+  key-name: KEYI
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_I
+- report-type: key-press
+  key-index: 53
+  key-name: KEYJ
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_J
+- report-type: key-press
+  key-index: 54
+  key-name: KEYK
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_K
+- report-type: key-press
+  key-index: 55
+  key-name: KEYL
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_L
+- report-type: key-press
+  key-index: 56
+  key-name: KEYM
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_M
+- report-type: key-press
+  key-index: 57
+  key-name: KEYN
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_N
+- report-type: key-press
+  key-index: 58
+  key-name: KEYO
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_O
+- report-type: key-press
+  key-index: 59
+  key-name: KEYP
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_P
+- report-type: key-press
+  key-index: 60
+  key-name: KEYQ
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_Q
+- report-type: key-press
+  key-index: 61
+  key-name: KEYR
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_R
+- report-type: key-press
+  key-index: 62
+  key-name: KEYS
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_S
+- report-type: key-press
+  key-index: 63
+  key-name: KEYT
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_T
+- report-type: key-press
+  key-index: 64
+  key-name: KEYU
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_U
+- report-type: key-press
+  key-index: 65
+  key-name: KEYV
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_V
+- report-type: key-press
+  key-index: 66
+  key-name: KEYW
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_W
+- report-type: key-press
+  key-index: 67
+  key-name: KEYX
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_X
+- report-type: key-press
+  key-index: 68
+  key-name: KEYY
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_Y
+- report-type: key-press
+  key-index: 69
+  key-name: KEYZ
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_Z
+- report-type: key-press
+  key-index: 70
+  key-name: SLASH
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_slash
+- report-type: key-press
+  key-index: 71
+  key-name: SPACE
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_space
+- report-type: key-press
+  key-index: 72
+  key-name: OVERFLY
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_overfly
+- report-type: key-press
+  key-index: 73
+  key-name: Clear
+  action: execute-simulator-command
+  simulator-command: sim/FMS/key_clear
+simulator-reports:
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_text_line0
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_text_line1
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_text_line2
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_text_line3
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_text_line4
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_text_line5
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_text_line6
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_text_line7
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_text_line8
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_text_line9
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_text_line10
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_text_line11
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_text_line12
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_text_line13
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_style_line0
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_style_line1
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_style_line2
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_style_line3
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_style_line4
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_style_line5
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_style_line6
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_style_line7
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_style_line8
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_style_line9
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_style_line10
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_style_line11
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_style_line12
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/radios/indicators/fms_cdu1_style_line13
+  action: set-display
+- report-type: simulator-value-change
+  name: sim/cockpit2/switches/instrument_brightness_ratio[13]
+  action: set-device-value
+  device-value-name: DisplayBrightness
+- report-type: simulator-value-change
+  name: sim/cockpit2/switches/instrument_brightness_ratio[6]
+  action: set-device-value
+  device-value-name: KeyboardBacklight

@@ -138,8 +138,10 @@ def add_extensions(extension_paths: List[str], trace_ext_loading: bool = False):
     logger.debug("..loaded")
     logger.info(f"loaded extensions {", ".join(loaded)}")
 
+
 if args.extension is not None and len(args.extension) > 0:
     add_extensions(extension_paths=args.extension, trace_ext_loading=True)
+
 
 def main():
     if args.verbose:

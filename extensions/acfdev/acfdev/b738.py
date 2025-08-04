@@ -1,5 +1,6 @@
 """
 """
+
 import logging
 from typing import Set
 import winwing
@@ -18,6 +19,7 @@ PAGE_CHARS_PER_LINE = 24
 PAGE_BYTES_PER_CHAR = 3
 PAGE_BYTES_PER_LINE = PAGE_CHARS_PER_LINE * PAGE_BYTES_PER_CHAR
 PAGE_BYTES_PER_PAGE = PAGE_BYTES_PER_LINE * PAGE_LINES
+
 
 class B738(MCDUAircraft):
 
@@ -79,7 +81,7 @@ class B738(MCDUAircraft):
 
         # Heading
         title = "WINWING for X-Plane"
-        idx = title.index("G") + int((PAGE_CHARS_PER_LINE - len(title))/2)
+        idx = title.index("G") + int((PAGE_CHARS_PER_LINE - len(title)) / 2)
         center_line(0, title, COLORS.DEFAULT)
         page[0][idx * PAGE_BYTES_PER_CHAR] = COLORS.RED
 
@@ -96,7 +98,7 @@ class B738(MCDUAircraft):
         center_line(12, "github.com/devleaks", COLORS.DEFAULT, True)
         title = "/pywinwing"
         center_line(13, title, COLORS.DEFAULT, True)
-        idx = title.index("g") + int((PAGE_CHARS_PER_LINE - len(title))/2)
+        idx = title.index("g") + int((PAGE_CHARS_PER_LINE - len(title)) / 2)
         page[13][idx * PAGE_BYTES_PER_CHAR] = COLORS.RED
 
         return page

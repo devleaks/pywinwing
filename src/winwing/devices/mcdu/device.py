@@ -43,6 +43,7 @@ class SPECIAL_CHARACTERS(IntEnum):
     DELTA = 9912
     TEST = 9913
 
+
 class MCDUDevice:
     def __init__(self, vendor_id: int, product_id: int):
         self.vendor_id = vendor_id
