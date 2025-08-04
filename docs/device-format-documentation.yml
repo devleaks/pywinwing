@@ -59,11 +59,23 @@ simulator-reports:
       action: refresh-display
 
     - report-type: simulator-value-change
-      simulator-value-name: AirbusFBW/PanelBrightnessLevel
-      action: set-device-value
-      device-value-name: Backlight
+      simulator-value-name: AirbusFBW/MCDU1VertSlewKeys
+      action: refresh-display
+
+    - report-type: simulator-value-change
+      simulator-value-name: sim/aircraft/view/acf_author
+      action: change-aircraft
+
+    - report-type: simulator-value-change
+      simulator-value-name: sim/aircraft/view/acf_ICAO
+      action: change-aircraft
 
     - report-type: simulator-command-active
       simulator-command-name: sim/map/show_current
       action: set-device-led
       device-led-name: status
+
+    - report-type: simulator-plugin-event
+      simulator-event-name: new-scenery-loaded
+      action: some-future-action
+
