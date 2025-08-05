@@ -7,372 +7,372 @@ device-reports:
   key-index: 0
   key-name: LSK1L
   action: execute-simulator-command
-  simulator-command: sim/FMS/ls_1l
+  simulator-command-name: sim/FMS/ls_1l
 - report-type: key-press
   key-index: 1
   key-name: LSK2L
   action: execute-simulator-command
-  simulator-command: sim/FMS/ls_2l
+  simulator-command-name: sim/FMS/ls_2l
 - report-type: key-press
   key-index: 2
   key-name: LSK3L
   action: execute-simulator-command
-  simulator-command: sim/FMS/ls_3l
+  simulator-command-name: sim/FMS/ls_3l
 - report-type: key-press
   key-index: 3
   key-name: LSK4L
   action: execute-simulator-command
-  simulator-command: sim/FMS/ls_4l
+  simulator-command-name: sim/FMS/ls_4l
 - report-type: key-press
   key-index: 4
   key-name: LSK5L
   action: execute-simulator-command
-  simulator-command: sim/FMS/ls_5l
+  simulator-command-name: sim/FMS/ls_5l
 - report-type: key-press
   key-index: 5
   key-name: LSK6L
   action: execute-simulator-command
-  simulator-command: sim/FMS/ls_6l
+  simulator-command-name: sim/FMS/ls_6l
 - report-type: key-press
   key-index: 6
   key-name: LSK1R
   action: execute-simulator-command
-  simulator-command: sim/FMS/ls_1r
+  simulator-command-name: sim/FMS/ls_1r
 - report-type: key-press
   key-index: 7
   key-name: LSK2R
   action: execute-simulator-command
-  simulator-command: sim/FMS/ls_2r
+  simulator-command-name: sim/FMS/ls_2r
 - report-type: key-press
   key-index: 8
   key-name: LSK3R
   action: execute-simulator-command
-  simulator-command: sim/FMS/ls_3r
+  simulator-command-name: sim/FMS/ls_3r
 - report-type: key-press
   key-index: 9
   key-name: LSK4R
   action: execute-simulator-command
-  simulator-command: sim/FMS/ls_4r
+  simulator-command-name: sim/FMS/ls_4r
 - report-type: key-press
   key-index: 10
   key-name: LSK5R
   action: execute-simulator-command
-  simulator-command: sim/FMS/ls_5r
+  simulator-command-name: sim/FMS/ls_5r
 - report-type: key-press
   key-index: 11
   key-name: LSK6R
   action: execute-simulator-command
-  simulator-command: sim/FMS/ls_6r
+  simulator-command-name: sim/FMS/ls_6r
 - report-type: key-press
   key-index: 12
   key-name: DIRTO
   action: execute-simulator-command
-  simulator-command: sim/FMS/dir_intc
+  simulator-command-name: sim/FMS/dir_intc
 - report-type: key-press
   key-index: 13
   key-name: PROG
   action: execute-simulator-command
-  simulator-command: sim/FMS/prog
+  simulator-command-name: sim/FMS/prog
 - report-type: key-press
   key-index: 14
   key-name: PERF
   action: execute-simulator-command
-  simulator-command: sim/FMS/perf
+  simulator-command-name: sim/FMS/perf
 - report-type: key-press
   key-index: 15
   key-name: INIT
   action: execute-simulator-command
-  simulator-command: sim/FMS/index
+  simulator-command-name: sim/FMS/index
 - report-type: key-press
   key-index: 16
   key-name: DATA
   action: execute-simulator-command
-  simulator-command: sim/FMS/data
+  simulator-command-name: sim/FMS/data
 - report-type: key-press
   key-index: 17
   key-name: MENU1
   action: execute-simulator-command
-  simulator-command: none
+  simulator-command-name: none
 - report-type: key-press
   key-index: 18
   key-name: BRT
   action: execute-simulator-command
-  simulator-command: laminar/A333/buttons/fms1_brightness_up
+  simulator-command-name: laminar/A333/buttons/fms1_brightness_up
 - report-type: key-press
   key-index: 19
   key-name: FPLN
   action: execute-simulator-command
-  simulator-command: sim/FMS/fpln
+  simulator-command-name: sim/FMS/fpln
 - report-type: key-press
   key-index: 20
   key-name: RADNAV
   action: execute-simulator-command
-  simulator-command: sim/FMS/navrad
+  simulator-command-name: sim/FMS/navrad
 - report-type: key-press
   key-index: 21
   key-name: FUEL
   action: execute-simulator-command
-  simulator-command: sim/FMS/fuel_pred
+  simulator-command-name: sim/FMS/fuel_pred
 - report-type: key-press
   key-index: 22
   key-name: SEC-FPLN
   action: execute-simulator-command
-  simulator-command: none
+  simulator-command-name: none
 - report-type: key-press
   key-index: 23
   key-name: ATC
   action: execute-simulator-command
-  simulator-command: none
+  simulator-command-name: none
 - report-type: key-press
   key-index: 24
   key-name: MENU
   action: execute-simulator-command
-  simulator-command: sim/FMS/menu
+  simulator-command-name: sim/FMS/menu
 - report-type: key-press
   key-index: 25
   key-name: DIM
   action: execute-simulator-command
-  simulator-command: laminar/A333/buttons/fms1_brightness_dn
+  simulator-command-name: laminar/A333/buttons/fms1_brightness_dn
 - report-type: key-press
   key-index: 26
   key-name: AIRPORT
   action: execute-simulator-command
-  simulator-command: sim/FMS/airport
+  simulator-command-name: sim/FMS/airport
 - report-type: key-press
   key-index: 27
   key-name: MENU2
   action: execute-simulator-command
-  simulator-command: none
+  simulator-command-name: none
 - report-type: key-press
   key-index: 28
   key-name: SLEW_LEFT
   action: execute-simulator-command
-  simulator-command: sim/FMS/prev
+  simulator-command-name: sim/FMS/prev
 - report-type: key-press
   key-index: 29
   key-name: SLEW_UP
   action: execute-simulator-command
-  simulator-command: sim/FMS/up
+  simulator-command-name: sim/FMS/up
 - report-type: key-press
   key-index: 30
   key-name: SLEW_RIGHT
   action: execute-simulator-command
-  simulator-command: sim/FMS/next
+  simulator-command-name: sim/FMS/next
 - report-type: key-press
   key-index: 31
   key-name: SLEW_DOWN
   action: execute-simulator-command
-  simulator-command: sim/FMS/down
+  simulator-command-name: sim/FMS/down
 - report-type: key-press
   key-index: 32
   key-name: KEY1
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_1
+  simulator-command-name: sim/FMS/key_1
 - report-type: key-press
   key-index: 33
   key-name: KEY2
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_2
+  simulator-command-name: sim/FMS/key_2
 - report-type: key-press
   key-index: 34
   key-name: KEY3
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_3
+  simulator-command-name: sim/FMS/key_3
 - report-type: key-press
   key-index: 35
   key-name: KEY4
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_4
+  simulator-command-name: sim/FMS/key_4
 - report-type: key-press
   key-index: 36
   key-name: KEY5
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_5
+  simulator-command-name: sim/FMS/key_5
 - report-type: key-press
   key-index: 37
   key-name: KEY6
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_6
+  simulator-command-name: sim/FMS/key_6
 - report-type: key-press
   key-index: 38
   key-name: KEY7
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_7
+  simulator-command-name: sim/FMS/key_7
 - report-type: key-press
   key-index: 39
   key-name: KEY8
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_8
+  simulator-command-name: sim/FMS/key_8
 - report-type: key-press
   key-index: 40
   key-name: KEY9
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_9
+  simulator-command-name: sim/FMS/key_9
 - report-type: key-press
   key-index: 41
   key-name: DOT
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_period
+  simulator-command-name: sim/FMS/key_period
 - report-type: key-press
   key-index: 42
   key-name: KEY0
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_0
+  simulator-command-name: sim/FMS/key_0
 - report-type: key-press
   key-index: 43
   key-name: PLUSMINUS
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_minus
+  simulator-command-name: sim/FMS/key_minus
 - report-type: key-press
   key-index: 44
   key-name: KEYA
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_A
+  simulator-command-name: sim/FMS/key_A
 - report-type: key-press
   key-index: 45
   key-name: KEYB
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_B
+  simulator-command-name: sim/FMS/key_B
 - report-type: key-press
   key-index: 46
   key-name: KEYC
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_C
+  simulator-command-name: sim/FMS/key_C
 - report-type: key-press
   key-index: 47
   key-name: KEYD
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_D
+  simulator-command-name: sim/FMS/key_D
 - report-type: key-press
   key-index: 48
   key-name: KEYE
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_E
+  simulator-command-name: sim/FMS/key_E
 - report-type: key-press
   key-index: 49
   key-name: KEYF
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_F
+  simulator-command-name: sim/FMS/key_F
 - report-type: key-press
   key-index: 50
   key-name: KEYG
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_G
+  simulator-command-name: sim/FMS/key_G
 - report-type: key-press
   key-index: 51
   key-name: KEYH
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_H
+  simulator-command-name: sim/FMS/key_H
 - report-type: key-press
   key-index: 52
   key-name: KEYI
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_I
+  simulator-command-name: sim/FMS/key_I
 - report-type: key-press
   key-index: 53
   key-name: KEYJ
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_J
+  simulator-command-name: sim/FMS/key_J
 - report-type: key-press
   key-index: 54
   key-name: KEYK
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_K
+  simulator-command-name: sim/FMS/key_K
 - report-type: key-press
   key-index: 55
   key-name: KEYL
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_L
+  simulator-command-name: sim/FMS/key_L
 - report-type: key-press
   key-index: 56
   key-name: KEYM
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_M
+  simulator-command-name: sim/FMS/key_M
 - report-type: key-press
   key-index: 57
   key-name: KEYN
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_N
+  simulator-command-name: sim/FMS/key_N
 - report-type: key-press
   key-index: 58
   key-name: KEYO
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_O
+  simulator-command-name: sim/FMS/key_O
 - report-type: key-press
   key-index: 59
   key-name: KEYP
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_P
+  simulator-command-name: sim/FMS/key_P
 - report-type: key-press
   key-index: 60
   key-name: KEYQ
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_Q
+  simulator-command-name: sim/FMS/key_Q
 - report-type: key-press
   key-index: 61
   key-name: KEYR
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_R
+  simulator-command-name: sim/FMS/key_R
 - report-type: key-press
   key-index: 62
   key-name: KEYS
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_S
+  simulator-command-name: sim/FMS/key_S
 - report-type: key-press
   key-index: 63
   key-name: KEYT
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_T
+  simulator-command-name: sim/FMS/key_T
 - report-type: key-press
   key-index: 64
   key-name: KEYU
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_U
+  simulator-command-name: sim/FMS/key_U
 - report-type: key-press
   key-index: 65
   key-name: KEYV
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_V
+  simulator-command-name: sim/FMS/key_V
 - report-type: key-press
   key-index: 66
   key-name: KEYW
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_W
+  simulator-command-name: sim/FMS/key_W
 - report-type: key-press
   key-index: 67
   key-name: KEYX
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_X
+  simulator-command-name: sim/FMS/key_X
 - report-type: key-press
   key-index: 68
   key-name: KEYY
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_Y
+  simulator-command-name: sim/FMS/key_Y
 - report-type: key-press
   key-index: 69
   key-name: KEYZ
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_Z
+  simulator-command-name: sim/FMS/key_Z
 - report-type: key-press
   key-index: 70
   key-name: SLASH
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_slash
+  simulator-command-name: sim/FMS/key_slash
 - report-type: key-press
   key-index: 71
   key-name: SPACE
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_space
+  simulator-command-name: sim/FMS/key_space
 - report-type: key-press
   key-index: 72
   key-name: OVERFLY
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_overfly
+  simulator-command-name: sim/FMS/key_overfly
 - report-type: key-press
   key-index: 73
   key-name: Clear
   action: execute-simulator-command
-  simulator-command: sim/FMS/key_clear
+  simulator-command-name: sim/FMS/key_clear
 simulator-reports:
 - report-type: simulator-value-change
   simulator-value-name: sim/cockpit2/radios/indicators/fms_cdu1_text_line0

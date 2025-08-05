@@ -5,7 +5,7 @@ import time
 from enum import IntEnum
 from typing import Tuple
 
-import hid
+from winwing.devices import HIDDevice
 
 from .constant import (
     MCDU_ANNUNCIATORS,
@@ -44,26 +44,10 @@ class SPECIAL_CHARACTERS(IntEnum):
     TEST = 9913
 
 
-class MCDUDevice:
+class MCDUDevice(HIDDevice):
     def __init__(self, vendor_id: int, product_id: int):
-        self.vendor_id = vendor_id
-        self.product_id = product_id
-
-        self.reader = threading.Event()
-        self.reader.set()
-        self.reader_thread: threading.Thread
-        self.callback = None
-        self._last_read = bytes(0)
-
+        HIDDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
         self.mcdu_unit = self.get_mcdu_mask()
-        try:
-            self.device = hid.Device(vid=self.vendor_id, pid=self.product_id)
-        except hid.HIDException:
-            logger.warning("could not open device", exc_info=True)
-            os._exit(-1)
-        logger.info("device connected")
-        self.busy_writing = threading.Lock()
-        self.init()
 
     def get_mcdu_mask(self) -> int:
         """Returns first device that matches Winwing' signature"""
