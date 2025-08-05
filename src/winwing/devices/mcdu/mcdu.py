@@ -38,17 +38,9 @@ logger = logging.getLogger(__name__)
 # When repetitive warnings, only show first ones:
 MAX_WARNING_COUNT = 3
 
-AUTHOR_REPORT = {
-        "report-type": "simulator-value-change",
-        "simulator-value-name": "sim/aircraft/view/acf_author",
-        "action": "change-aircraft"
-    }
-ICAO_REPORT = {
-        "report-type": "simulator-value-change",
-        "simulator-value-name": "sim/aircraft/view/acf_ICAO",
-        "action": "change-aircraft"
-    }
-ALWAYS_REPORTS = [ ICAO_REPORT, AUTHOR_REPORT ]
+AUTHOR_REPORT = {"report-type": "simulator-value-change", "simulator-value-name": "sim/aircraft/view/acf_author", "action": "change-aircraft"}
+ICAO_REPORT = {"report-type": "simulator-value-change", "simulator-value-name": "sim/aircraft/view/acf_ICAO", "action": "change-aircraft"}
+ALWAYS_REPORTS = [ICAO_REPORT, AUTHOR_REPORT]
 
 
 class MCDU(WinwingDevice):

@@ -141,6 +141,7 @@ class ChangeAircraft(MCDUDeviceAction):
                     self.device.change_aircraft(new_author=self.device.new_acf.get(AUTHOR_DATAREF), new_icao=self.device.new_acf.get(ICAO_DATAREF))
                     self.device.new_acf = {}
 
+
 # ====================
 # Simulator
 #

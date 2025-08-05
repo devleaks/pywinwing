@@ -38,6 +38,7 @@ class MCDU_BRIGHTNESS_NAME(Enum):
     BACKLIGHT = "KeyboardBacklight"
     SCREEN_BACKLIGHT = "LCDBacklight"
 
+
 SENSOR_CHECK_FREQUENCY = 40
 
 BRIGHTNESS_AUTO_ADJUST = [  # set to False to suppress auto-adjust
