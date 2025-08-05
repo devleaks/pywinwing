@@ -9,7 +9,7 @@ import textwrap
 
 import chardet
 
-from xpwebapi import CALLBACK_TYPE, DATAREF_DATATYPE, Dataref, Command
+from xpwebapi import CALLBACK_TYPE, DATAREF_DATATYPE, Dataref
 
 import winwing
 from winwing.devices import mcdu  # Must import since it contains references to other classes
@@ -24,6 +24,7 @@ from .constant import (
     MCDU_ANNUNCIATORS,
     MCDU_BRIGHTNESS,
     BRIGHTNESS_AUTO_ADJUST,
+    SENSOR_CHECK_FREQUENCY,
     COLORS,
     MCDU_STATUS,
     PAGE_LINES,
@@ -34,24 +35,21 @@ from .constant import (
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
-
-
 # When repetitive warnings, only show first ones:
 MAX_WARNING_COUNT = 3
-SENSOR_CHECK_FREQUENCY = 20
 
-
-ALWAYS_REPORTS = [
-    {
+AUTHOR_REPORT = {
         "report-type": "simulator-value-change",
         "simulator-value-name": "sim/aircraft/view/acf_author",
         "action": "change-aircraft"
-    },{
+    }
+ICAO_REPORT = {
         "report-type": "simulator-value-change",
         "simulator-value-name": "sim/aircraft/view/acf_ICAO",
         "action": "change-aircraft"
     }
-]
+ALWAYS_REPORTS = [ ICAO_REPORT, AUTHOR_REPORT ]
+
 
 class MCDU(WinwingDevice):
     """Winwing MCDU Coordinator
@@ -91,6 +89,7 @@ class MCDU(WinwingDevice):
 
         self.new_icao = None
         self.new_author = None
+        self.new_acf = {}
 
         self.device_reports = []
         self._device_reports_by_id = {}
@@ -185,6 +184,12 @@ class MCDU(WinwingDevice):
 
         self.simulator_reports = [MCDUSimulatorReport.new(config=s, device=self) for s in self.aircraft.simulator_reports()]
         self._simulator_reports_by_id = {s.key: s for s in self.simulator_reports}
+        # Add allways report datarefs
+        if ICAO_DATAREF not in self._simulator_reports_by_id:
+            self.simulator_reports.append(MCDUSimulatorReport.new(config=ICAO_REPORT, device=self))
+        if AUTHOR_DATAREF not in self._simulator_reports_by_id:
+            self.simulator_reports.append(MCDUSimulatorReport.new(config=AUTHOR_REPORT, device=self))
+        self._simulator_reports_by_id = {s.key: s for s in self.simulator_reports}
 
         self.mcdu_units = self.aircraft.mcdu_units
 
@@ -207,8 +212,8 @@ class MCDU(WinwingDevice):
         self.unload_datarefs()
         self.device_reports = []
         self._device_reports_by_id = {}
-        self.simulator_reports = []
-        self._simulator_reports_by_id = {}
+        self.simulator_reports = [MCDUSimulatorReport.new(config=s, device=self) for s in ALWAYS_REPORTS]
+        self._simulator_reports_by_id = {s.key: s for s in self.simulator_reports}
         self.mcdu_units = []
         self.aircraft = None
         logger.debug(f"..unloaded aircraft {self.icao}")
@@ -226,25 +231,6 @@ class MCDU(WinwingDevice):
             except:
                 logger.warning(f"could not decode value {value} with encoding {encoding}", exc_info=True)
         return value
-
-    def get_all_dataref_values(self) -> Dict[str, int | float | str | None]:
-        """Returns all registered datarefs and their values"""
-        return {d.path: d.value for d in self._datarefs.values()}
-
-    def set_dataref_value(self, path: str, value: int | float | str):
-        """Set the value of a dataref"""
-        d = self._datarefs.get(path)
-        if d is None:
-            return
-        d.value = value
-        d.write()
-
-    def execute_command(self, path: str):
-        """Execute a command"""
-        # inefficient if not using cache since cause cmd_id lookup on each invoque
-        # (default is to use cache)
-        c = Command(api=self.api, path=path)
-        c.execute()
 
     def register_datarefs(self, paths: List[str]):
         self._datarefs = self._datarefs | {p: Dataref(api=self.api, path=p) for p in paths if p not in self._datarefs}
@@ -382,7 +368,7 @@ class MCDU(WinwingDevice):
         """
 
         def data_count():
-            drefs = self.get_all_dataref_values()
+            drefs = {d.path: d.value for d in self._datarefs.values()}
             reqs = filter(lambda k: k in self.display_datarefs and drefs.get(k) is not None, drefs.keys())
             return len(list(reqs))
 
@@ -537,9 +523,9 @@ class MCDU(WinwingDevice):
         if abs(dr) > self._sensor_delta:
             w = True
             self.sensors["right"] = v
-        if not w:
-            return
-        logger.debug(f"sensors: left {self.sensors['left']} ({dl}), right {self.sensors['right']} ({dr})")
+        if w:
+            logger.debug(f"sensors: left {self.sensors['left']} ({dl}), right {self.sensors['right']} ({dr})")
+
         if not BRIGHTNESS_AUTO_ADJUST:
             return
         # Auto adjust back light brightness

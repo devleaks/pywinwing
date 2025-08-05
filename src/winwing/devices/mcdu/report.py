@@ -7,6 +7,8 @@ from winwing.devices.winwing import WinwingDevice
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
+from xpwebapi import Command
+
 from .constant import ICAO_DATAREF, AUTHOR_DATAREF, MCDU_BRIGHTNESS, MCDU_BRIGHTNESS_NAME
 from ...helpers.report import DeviceAction, SimulatorAction, DeviceReport, SimulatorReport
 
@@ -59,16 +61,12 @@ class RefreshDeviceDisplay(MCDUDeviceAction):
         MCDUDeviceAction.__init__(self, name=name, config=config, device=device)
 
     def execute(self, **kwargs):
-        mcdu = kwargs.get("mcdu")
-        if mcdu is None:
-            logger.warning("no MCDU device")
-            return
-        if mcdu.aircraft is None:
+        if self.device.aircraft is None:
             logger.warning("no aircraft")
             return
         dataref = self.config.get("simulator-value-name")
         value = kwargs.get("value")
-        mcdu.display.variable_changed(dataref=dataref, value=value)
+        self.device.display.variable_changed(dataref=dataref, value=value)
 
 
 class SetDeviceValue(MCDUDeviceAction):
@@ -77,18 +75,13 @@ class SetDeviceValue(MCDUDeviceAction):
         MCDUDeviceAction.__init__(self, name=name, config=config, device=device)
 
     def execute(self, **kwargs):
-        mcdu = kwargs.get("mcdu")
-        if mcdu is None:
-            logger.warning(f"{self.name}: no MCDU device")
-            return
-
         def doit(v, name):
             v100 = int(round(100 * (v + 1) / 256))
             if name == MCDU_BRIGHTNESS_NAME.BACKLIGHT.value:
-                mcdu.device.set_brightness(backlight=MCDU_BRIGHTNESS.BACKLIGHT, brightness=v)
+                self.device.device.set_brightness(backlight=MCDU_BRIGHTNESS.BACKLIGHT, brightness=v)
                 logger.info(f"{self.name} set device backlight to {v100}%")
             elif name == MCDU_BRIGHTNESS_NAME.SCREEN_BACKLIGHT.value:
-                mcdu.device.set_brightness(backlight=MCDU_BRIGHTNESS.SCREEN_BACKLIGHT, brightness=v)
+                self.device.device.set_brightness(backlight=MCDU_BRIGHTNESS.SCREEN_BACKLIGHT, brightness=v)
                 logger.info(f"{self.name} set device screen backlight to {v100}%")
             else:
                 logger.warning(f"{self.name} not a device brightness variable name")
@@ -103,8 +96,8 @@ class SetDeviceValue(MCDUDeviceAction):
         varname = self.config.get("device-value-name")
         # if varname is None...
         dataref = self.config.get("simulator-value-name")
-        if mcdu.brightness.get(dataref, -1) != value:
-            mcdu.brightness[dataref] = value
+        if self.device.brightness.get(dataref, -1) != value:
+            self.device.brightness[dataref] = value
             doit(v=value, name=varname)
         # else value not changed
 
@@ -139,19 +132,14 @@ class ChangeAircraft(MCDUDeviceAction):
             return
         dataref = self.config.get("simulator-value-name")
         value = kwargs.get("value")
-        if mcdu.aircraft is not None:
-            if dataref == ICAO_DATAREF:
-                mcdu.new_icao = value
-                logger.debug(f"got new icao: {dataref}={value}")
-            if dataref == AUTHOR_DATAREF:
-                mcdu.new_author = value
-                logger.debug(f"got new author: {dataref}={value}")
-            if mcdu.new_icao is not None and mcdu.new_author is not None:  # not thread safe
-                logger.debug("got new icao and author, changing aircraft")
-                mcdu.change_aircraft(new_author=mcdu.new_author, new_icao=mcdu.new_icao)
-                mcdu.new_icao = None
-                mcdu.new_author = None
-
+        if self.device.aircraft is not None:
+            self.device.new_acf[dataref] = value
+            logger.debug(f"got new aircraft: {dataref}={value}")
+            if self.device.new_acf.get(AUTHOR_DATAREF) is not None and self.device.new_acf.get(ICAO_DATAREF) is not None:  # not thread safe
+                if self.device.new_acf.get(AUTHOR_DATAREF) != self.device.author or self.device.new_acf.get(ICAO_DATAREF) != self.device.icao:
+                    logger.debug("got new icao and/or author, changing aircraft")
+                    self.device.change_aircraft(new_author=self.device.new_acf.get(AUTHOR_DATAREF), new_icao=self.device.new_acf.get(ICAO_DATAREF))
+                    self.device.new_acf = {}
 
 # ====================
 # Simulator
@@ -201,7 +189,8 @@ class ExecuteSimulatorCommand(MCDUSimulatorAction):
             logger.warning("no MCDU device")
             return
         unit_dataref = mcdu.aircraft.set_mcdu_unit(str_in=self.name, mcdu_unit=mcdu.device.mcdu_unit_id)
-        mcdu.execute_command(unit_dataref)
+        c = Command(api=self.simulator, path=unit_dataref)
+        c.execute()
         logger.debug(f"sent command {unit_dataref}")
 
 
@@ -220,7 +209,7 @@ class SetSimulatorValue(MCDUSimulatorAction):
         if value is None:
             logger.debug(f"no value for {unit_dataref} ({value})")
             return
-        mcdu.api.set_dataref_value(unit_dataref, value)
+        self.simulator.set_dataref_value(unit_dataref, value)
 
 
 # #######################################@

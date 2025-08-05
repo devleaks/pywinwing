@@ -724,10 +724,4 @@ simulator-reports:
   simulator-value-name: AirbusFBW/DUBrightness[7]
   action: set-device-value
   device-value-name: LCDBacklight
-- report-type: simulator-value-change
-  simulator-value-name: sim/aircraft/view/acf_author
-  action: change-aircraft
-- report-type: simulator-value-change
-  simulator-value-name: sim/aircraft/view/acf_ICAO
-  action: change-aircraft
 
