@@ -1,4 +1,8 @@
-"""
+"""Aircraft class for Laminar Research Airbus A330-220 as provided with X-Plane.
+
+This Aircraft class is completed with a configuration file which lists all datarefs
+and commands used by/for this aircraft.
+
 """
 
 import logging

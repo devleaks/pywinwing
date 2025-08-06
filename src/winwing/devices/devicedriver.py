@@ -1,3 +1,8 @@
+"""Abstract base class for Winwing device drivers
+
+Device drivers are the module that communicate directly with the device,
+either to read data from it, or send data to it.
+"""
 import logging
 import threading
 

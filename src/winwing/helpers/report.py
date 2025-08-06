@@ -1,3 +1,19 @@
+"""Action and Report base classes
+
+A device or the simulator sends a report (name loosely inspired by HID protocol).
+Reports have a "type", and depending on their type, carry information or value they transfer.
+That's what this file attempts to show.
+
+Device reports are sent by HID device. They carry some information. For example, a "key-pressed"
+report is issued when a key is pressed, and the information it carries it the name or identifier
+of the key that was pressed.
+This file explain what must be done when that report is received: the action that must be carried over.
+
+Similarly, the simulator also sends messages on the Web socket, reflecting simulator variable changes,
+or executed commands.
+In turn, these simulator-reports trigger actions on the device: refresh the display (set-display),
+turn this LED on or off, adjust screen brightness or keyboard backlight...
+"""
 import logging
 from abc import ABC, abstractmethod
 

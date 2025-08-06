@@ -1,4 +1,9 @@
-"""
+"""Abstract base class for representation of an aircraft to Winwing devices
+
+A winwing device may often be used by different aircrafts.
+However, each aircraft, from different editors, may have different means to operate and do things in the simulator.
+This class aims at hiding those particularities behind a common representation.
+
 """
 
 import os

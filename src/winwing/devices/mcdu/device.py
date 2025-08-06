@@ -1,3 +1,8 @@
+"""MCDU Hardware Driver
+
+Collects HID messages from device and send HID message to change display or
+turn LED on or off.
+"""
 import os
 import logging
 import threading
@@ -22,9 +27,9 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 WINWING_MCDU_DEVICES = [
-    {"vid": 0x4098, "pid": 0xBB36, "name": "MCDU - Captain", "mask": MCDU_DEVICE_MASKS.MCDU | MCDU_DEVICE_MASKS.CAP},
-    {"vid": 0x4098, "pid": 0xBB3E, "name": "MCDU - First Officer", "mask": MCDU_DEVICE_MASKS.MCDU | MCDU_DEVICE_MASKS.FO},
-    {"vid": 0x4098, "pid": 0xBB3A, "name": "MCDU - Observer", "mask": MCDU_DEVICE_MASKS.MCDU | MCDU_DEVICE_MASKS.OBS},
+    {"vid": 0x4098, "pid": 0xBB36, "name": "MCDU - Captain", "mask": MCDU_DEVICE_MASKS.MCDU | MCDU_DEVICE_MASKS.CAP},  # MCDU, Captain side
+    {"vid": 0x4098, "pid": 0xBB3E, "name": "MCDU - First Officer", "mask": MCDU_DEVICE_MASKS.MCDU | MCDU_DEVICE_MASKS.FO},  # MCDU, First officer side
+    {"vid": 0x4098, "pid": 0xBB3A, "name": "MCDU - Observer", "mask": MCDU_DEVICE_MASKS.MCDU | MCDU_DEVICE_MASKS.OBS},  # MCDU, Observer
 ]
 
 
@@ -78,8 +83,6 @@ class MCDUDevice(HIDDevice):
         self.mcdu_unit = MCDU_DEVICE_MASKS.MCDU | unit
 
     def set_unit_led(self, on: bool = True):
-        # self.set_led(led=MCDU_ANNUNCIATORS.FM1, on=False)
-        # self.set_led(led=MCDU_ANNUNCIATORS.FM2, on=False)
         if self.mcdu_unit & MCDU_DEVICE_MASKS.FO:
             self.set_led(led=MCDU_ANNUNCIATORS.FM2, on=on)
             return

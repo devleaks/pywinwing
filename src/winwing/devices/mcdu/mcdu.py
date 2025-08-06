@@ -1,3 +1,9 @@
+"""Winwing MCDU Device as a while
+
+Global management of the device, hardware interaction,
+communication with simulator, dealing with different types of Airbus aircrafts...
+
+"""
 from __future__ import annotations
 import io
 import logging

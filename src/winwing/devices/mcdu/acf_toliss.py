@@ -1,4 +1,9 @@
-"""
+"""Aircraft class for ToLiss Airbus aircraft, probably all of them.
+
+This Aircraft class is completed with one aircraft configuration file for each Airbus
+model (A321, A330, etc.).
+The configuration file list datarefs and commands used by/for each aircraft.
+
 """
 
 import logging
