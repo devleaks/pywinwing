@@ -64,7 +64,7 @@ class Aircraft(ABC):
             icao (str): Aircraft ICAO
 
         Returns:
-            [Aircraft]: Aircraft adapter
+            (Aircraft): Aircraft adapter
         """
 
         adapters = Aircraft.adapters()
@@ -185,7 +185,6 @@ class Aircraft(ABC):
 
         Args:
             device (WinwingDevice): [description]
-            api (XPAPI): [description]
 
         Returns:
             bool: success of initialisation
