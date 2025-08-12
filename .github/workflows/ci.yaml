@@ -19,7 +19,6 @@ jobs:
           key: ${{ github.ref }}
           path: .cache
       # - run: pip install -r requirements.txt
-      #
       - run: pip install pymdown-extensions
       - run: pip install mkdocs
       - run: pip install mkdocs-material
