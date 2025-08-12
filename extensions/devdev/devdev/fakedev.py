@@ -26,12 +26,13 @@ class FakeDev(HIDDevice):
                 self.callback(data_in)
             print("received", data_in)
 
+
 class FakeWinwing(WinwingDevice):
     """Note: To handle non winwing devices, we need to add their VENDOR_ID to
 
-       WinwingDevice.VENDOR_IDS
+    WinwingDevice.VENDOR_IDS
 
-       (there is no mechanism to dynamically add vendor ids)
+    (there is no mechanism to dynamically add vendor ids)
 
     """
 

@@ -27,8 +27,8 @@ nav:
 - Home:
   - Overview: index.md
   - Changelog: changelog.md
-- Usage: usage/index.md
-- Reference: reference/index.md
+- Usage: usage.md
+- Reference: reference.md
 
 markdown_extensions:
 - pymdownx.snippets

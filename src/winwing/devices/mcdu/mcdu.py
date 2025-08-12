@@ -1,30 +1,36 @@
+"""Winwing MCDU Device as a while
+
+Global management of the device, hardware interaction,
+communication with simulator, dealing with different types of Airbus aircrafts...
+
+"""
 from __future__ import annotations
 import io
 import logging
 import threading
-import re
 from typing import Dict, List
 from time import sleep
 from datetime import datetime
 import textwrap
 
-import winwing
-from winwing.devices import mcdu
-from xpwebapi import CALLBACK_TYPE, DATAREF_DATATYPE, Dataref, Command
 import chardet
 
+from xpwebapi import CALLBACK_TYPE, DATAREF_DATATYPE, Dataref
+
+import winwing
+from winwing.devices import mcdu  # Must import since it contains references to other classes
 from winwing.helpers.aircraft import Aircraft
 from ..winwing import WinwingDevice
 from .device import SPECIAL_CHARACTERS, MCDUDevice, MCDU_DEVICE_MASKS
+from .report import MCDUDeviceReport, MCDUSimulatorReport
 from .constant import (
-    ButtonType,
-    DrefType,
-    Button,
     AIRCRAFT_DATAREFS,
     ICAO_DATAREF,
     AUTHOR_DATAREF,
     MCDU_ANNUNCIATORS,
     MCDU_BRIGHTNESS,
+    BRIGHTNESS_AUTO_ADJUST,
+    SENSOR_CHECK_FREQUENCY,
     COLORS,
     MCDU_STATUS,
     PAGE_LINES,
@@ -35,10 +41,12 @@ from .constant import (
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
-
-
 # When repetitive warnings, only show first ones:
 MAX_WARNING_COUNT = 3
+
+AUTHOR_REPORT = {"report-type": "simulator-value-change", "simulator-value-name": "sim/aircraft/view/acf_author", "action": "change-aircraft"}
+ICAO_REPORT = {"report-type": "simulator-value-change", "simulator-value-name": "sim/aircraft/view/acf_ICAO", "action": "change-aircraft"}
+ALWAYS_REPORTS = [ICAO_REPORT, AUTHOR_REPORT]
 
 
 class MCDU(WinwingDevice):
@@ -50,7 +58,7 @@ class MCDU(WinwingDevice):
     """
 
     WINWING_PRODUCT_IDS = [47926, 47930, 47934]
-    VERSION = "0.9.2"
+    VERSION = "0.10.0"
 
     def __init__(self, vendor_id: int, product_id: int, **kwargs):
         WinwingDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
@@ -70,7 +78,7 @@ class MCDU(WinwingDevice):
         self._datarefs = {}
         self._loaded_datarefs = set()
 
-        self.required_datarefs = []
+        self.display_datarefs = []
         self.mcdu_units = set()
 
         self.author = ""
@@ -79,21 +87,23 @@ class MCDU(WinwingDevice):
 
         self.new_icao = None
         self.new_author = None
+        self.new_acf = {}
 
-        self.buttons = []
-        self._buttons_by_id = {}
+        self.device_reports = []
+        self._device_reports_by_id = {}
+        self.simulator_reports = [MCDUSimulatorReport.new(config=s, device=self) for s in ALWAYS_REPORTS]
+        self._simulator_reports_by_id = {s.key: s for s in self.simulator_reports}
 
         self.display = MCDUDisplay(device=self.device)
         self.brightness = {}
+        self.sensors = {"left": 0, "right": 0}
 
         # Working variables
         self._warned = False
-        self._buttons_press_event = [0] * len(self.buttons)
-        self._buttons_release_event = [0] * len(self.buttons)
+        self._buttons_press_event = [0] * len(self.device_reports)
+        self._buttons_release_event = [0] * len(self.device_reports)
         self._last_large_button_mask = 0
-        self._left_sensor = 0  # sensors values runs from 0..255
-        self._right_sensor = 0
-        self._sensor_delta = 256
+        self._sensor_delta = 200
         self._reads = 0
         self.init()
 
@@ -127,8 +137,8 @@ class MCDU(WinwingDevice):
         self.display.message("Welcome", extra=True)
 
     def reset_buttons(self):
-        self._buttons_press_event = [0] * len(self.buttons)
-        self._buttons_release_event = [0] * len(self.buttons)
+        self._buttons_press_event = [0] * len(self.device_reports)
+        self._buttons_release_event = [0] * len(self.device_reports)
         self._last_large_button_mask = 0
         self._ready = True
 
@@ -148,21 +158,6 @@ class MCDU(WinwingDevice):
         return None
 
     def load_aircraft(self):
-        DREF_TYPE = {"command": DrefType.CMD, "data": DrefType.DATA, "none": DrefType.NONE}
-        BUTTON_TYPE = {"none": ButtonType.NONE, "press": ButtonType.TOGGLE, "switch": ButtonType.SWITCH}
-        BRIGHTNESS = {
-            "screen_backlight": MCDU_BRIGHTNESS.SCREEN_BACKLIGHT,
-            "backlight": MCDU_BRIGHTNESS.BACKLIGHT,
-        }
-
-        def mk_button(b: list) -> Button:
-            if type(b[3]) is str:
-                b[3] = DREF_TYPE[b[3]]
-            if type(b[4]) is str:
-                b[4] = BUTTON_TYPE[b[4]]
-            if type(b[5]) is str and b[5].lower() != "none":
-                b[5] = BRIGHTNESS[b[5]]
-            return Button(*b)
 
         def strip_index(path):  # path[5] -> path
             return path.split("[")[0]
@@ -181,29 +176,42 @@ class MCDU(WinwingDevice):
 
         self.display.set_aircraft(self.aircraft)
 
-        # Install buttons
-        self.buttons = [mk_button(b) for b in self.aircraft.mapped_keys()]
-        self._buttons_by_id = {b.id: b for b in self.buttons}
+        # Load device and simulator reports
+        self.device_reports = [MCDUDeviceReport.new(config=d, simulator=self.api) for d in self.aircraft.device_reports()]
+        self._device_reports_by_id = {d.key: d for d in self.device_reports}
+
+        self.simulator_reports = [MCDUSimulatorReport.new(config=s, device=self) for s in self.aircraft.simulator_reports()]
+        self._simulator_reports_by_id = {s.key: s for s in self.simulator_reports}
+        # Add allways report datarefs
+        if ICAO_DATAREF not in self._simulator_reports_by_id:
+            self.simulator_reports.append(MCDUSimulatorReport.new(config=ICAO_REPORT, device=self))
+        if AUTHOR_DATAREF not in self._simulator_reports_by_id:
+            self.simulator_reports.append(MCDUSimulatorReport.new(config=AUTHOR_REPORT, device=self))
+        self._simulator_reports_by_id = {s.key: s for s in self.simulator_reports}
 
         self.mcdu_units = self.aircraft.mcdu_units
 
-        drefs1 = self.aircraft.required_datarefs()
+        # Collects and registers datarefs in use
+        drefs1 = self.aircraft.display_datarefs()
         drefs2 = [d for d in self.aircraft.datarefs() if d not in drefs1]
         drefs_display = set([self.aircraft.set_mcdu_unit(str_in=d, mcdu_unit=self.device.mcdu_unit_id) for d in drefs1])
         drefs_no_display = set([self.aircraft.set_mcdu_unit(str_in=d, mcdu_unit=self.device.mcdu_unit_id) for d in drefs2])
-        self.required_datarefs = set([strip_index(d) for d in drefs_display])
+        self.display_datarefs = set([strip_index(d) for d in drefs_display])
         self._loaded_datarefs = drefs_display | drefs_no_display
         self.register_datarefs(paths=self._loaded_datarefs)
-        logger.debug(f"registered {len(self._loaded_datarefs)} datarefs for MCDU {self.device.mcdu_unit_id}, {len(self.required_datarefs)} required")
-        self.display.set_display_datarefs(dataref_list=self.required_datarefs, mcdu_units=self.mcdu_units)
+        logger.debug(f"registered {len(self._loaded_datarefs)} datarefs for MCDU {self.device.mcdu_unit_id}, {len(self.display_datarefs)} required")
+        self.display.set_display_datarefs(dataref_list=self.display_datarefs, mcdu_units=self.mcdu_units)
         logger.debug(f"loaded aircraft {self.icao}")
+        # To do? collects and registers command active reports?
 
     def unload_aircraft(self):
         old_icao = self.icao
         logger.debug(f"unloading aircraft {old_icao}..")
         self.unload_datarefs()
-        self.buttons = []
-        self._buttons_by_id = {}
+        self.device_reports = []
+        self._device_reports_by_id = {}
+        self.simulator_reports = [MCDUSimulatorReport.new(config=s, device=self) for s in ALWAYS_REPORTS]
+        self._simulator_reports_by_id = {s.key: s for s in self.simulator_reports}
         self.mcdu_units = []
         self.aircraft = None
         logger.debug(f"..unloaded aircraft {self.icao}")
@@ -221,25 +229,6 @@ class MCDU(WinwingDevice):
             except:
                 logger.warning(f"could not decode value {value} with encoding {encoding}", exc_info=True)
         return value
-
-    def get_all_dataref_values(self) -> Dict[str, int | float | str | None]:
-        """Returns all registered datarefs and their values"""
-        return {d.path: d.value for d in self._datarefs.values()}
-
-    def set_dataref_value(self, path: str, value: int | float | str):
-        """Set the value of a dataref"""
-        d = self._datarefs.get(path)
-        if d is None:
-            return
-        d.value = value
-        d.write()
-
-    def execute_command(self, path: str):
-        """Execute a command"""
-        # inefficient if not using cache since cause cmd_id lookup on each invoque
-        # (default is to use cache)
-        c = Command(api=self.api, path=path)
-        c.execute()
 
     def register_datarefs(self, paths: List[str]):
         self._datarefs = self._datarefs | {p: Dataref(api=self.api, path=p) for p in paths if p not in self._datarefs}
@@ -290,15 +279,13 @@ class MCDU(WinwingDevice):
         for i in range(12):
             large_button_mask |= data_in[i + 1] << (8 * i)
 
-        for i in range(len(self.buttons)):
+        for i in range(len(self.device_reports)):
             mask = 0x01 << i
             if xor_bitmask(large_button_mask, self._last_large_button_mask, mask):
-                if large_button_mask & mask:
-                    self.do_key_press(i)
-                else:
-                    self.do_key_release(i)
+                self.do_keypress(i, pressed=(large_button_mask & mask))
         self._last_large_button_mask = large_button_mask
-        if self._reads % 20 == 0:
+
+        if self._reads % SENSOR_CHECK_FREQUENCY == 0:
             self.do_sensors(data_in)
         self._reads = self._reads + 1
 
@@ -379,8 +366,8 @@ class MCDU(WinwingDevice):
         """
 
         def data_count():
-            drefs = self.get_all_dataref_values()
-            reqs = filter(lambda k: k in self.required_datarefs and drefs.get(k) is not None, drefs.keys())
+            drefs = {d.path: d.value for d in self._datarefs.values()}
+            reqs = filter(lambda k: k in self.display_datarefs and drefs.get(k) is not None, drefs.keys())
             return len(list(reqs))
 
         ## Wait for API dataref meta data in cache?
@@ -401,7 +388,7 @@ class MCDU(WinwingDevice):
         self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.STATUS, on=False)
         self.set_unit_warning()
         sleep(2)  # give a chance for data to arrive, 2.0 secs sufficient on medium computer
-        expected = len(self.required_datarefs)
+        expected = len(self.display_datarefs)
         cnt = data_count()
         warning_count = 0
         if cnt != expected:
@@ -430,7 +417,14 @@ class MCDU(WinwingDevice):
         self._warned = False
 
     def on_dataref_update(self, dataref: str, value):
-        # Save value in dataref
+        """Receive dataref updates and need to locate associated SimulatorReport
+
+        [description]
+
+        Args:
+            dataref (str): [description]
+            value ([type]): [description]
+        """
 
         d = self._datarefs.get(dataref)
         if d is None:
@@ -438,8 +432,7 @@ class MCDU(WinwingDevice):
             return
         d.value = value
 
-        # this is a string...
-        if type(value) is bytes:
+        if type(value) is bytes:  # this is a string, try to decode it
             if self.aircraft is not None:
                 value = self.aircraft.encode_bytes(dataref=d, value=value)
             else:
@@ -449,82 +442,26 @@ class MCDU(WinwingDevice):
                 else:
                     logger.warning(f"cannot decode bytes for {dataref} ({enc})")
 
-        # Special datarefs for brightness control
-        if dataref == ICAO_DATAREF or dataref == AUTHOR_DATAREF:
-            if self.aircraft is not None:
-                if dataref == ICAO_DATAREF:
-                    self.new_icao = value
-                    logger.debug(f"got new icao: {dataref}={value}")
-                if dataref == AUTHOR_DATAREF:
-                    self.new_author = value
-                    logger.debug(f"got new author: {dataref}={value}")
-                if self.new_icao is not None and self.new_author is not None:  # not thread safe
-                    logger.debug("got new icao and author, changing aircraft")
-                    self.change_aircraft(new_author=self.new_author, new_icao=self.new_icao)
-                    self.new_icao = None
-                    self.new_author = None
-            # else, aircraft not loaded yet, will be loaded by wait_for_resources()
+        report = self._simulator_reports_by_id.get(dataref)
+        if report is None:
+            logger.warning(f"no report for {dataref} ({value})")
+            return
 
-        if "Brightness" in dataref or "/anim" in dataref:
-            if "DUBrightness" in dataref and value <= 1:
-                # brightness is in 0..1, we need 0..255
-                value = int(value * 255)
-            if dataref not in self.brightness:
-                self.brightness[dataref] = value
-            elif value != self.brightness[dataref]:
-                self.brightness[dataref] = value
-                self.set_brightness(dataref, value)
-                logger.debug(f"set brightness: {dataref}={value}")
-            if "PanelBrightness" in dataref and value <= 1:
-                # brightness is in 0..1, we need 0..255
-                value = int(value * 255)
-            if dataref not in self.brightness:
-                self.brightness[dataref] = value
-            elif value != self.brightness[dataref]:
-                self.brightness[dataref] = value
-                self.set_brightness(dataref, value)
-                logger.debug(f"set brightness: {dataref}={value}")
+        report.activate(mcdu=self, value=value)
+        return
 
         # MCDU text datarefs
         if self.aircraft is None:
             logger.warning("no aircraft")
             return
 
-        if not self.aircraft.is_display_dataref(dataref):
-            logger.debug(f"not a display dataref {dataref}")
+    def do_keypress(self, key_id: int, pressed: bool):
+        report = self._device_reports_by_id.get(key_id)
+        if report is None:
+            logger.warning(f"device report for key {key_id} not found")
             return
-        self.display.variable_changed(dataref=dataref, value=value)
-
-    def do_key_press(self, key_id: int):
-        b = self._buttons_by_id.get(key_id)
-        if b is None:
-            logger.warning(f"button id {key_id} not found")
-            return
-        unit_dataref = self.aircraft.set_mcdu_unit(str_in=b.dataref, mcdu_unit=self.device.mcdu_unit_id)
-        logger.debug(f"button {b.label} pressed ({unit_dataref})")
-        if b.type == ButtonType.TOGGLE:
-            if b.label == "MENU2":  # special treatment to change MCDU unit
-                new_unit = self.change_mcdu_unit()
-                logger.debug(f"set mcdu unit {new_unit}")
-            elif b.dreftype == DrefType.CMD:
-                self.execute_command(unit_dataref)
-                logger.debug(f"sent command {unit_dataref}")
-            elif b.dreftype == DrefType.DATA:
-                val = self.api.get_dataref_value(unit_dataref)
-                if val is None:
-                    logger.debug(f"button toggle type: no value for {unit_dataref}")
-                    return
-                self.api.set_dataref_value(unit_dataref, not bool(val))
-                logger.debug(f"set dataref {unit_dataref} from {bool(val)} to {not bool(val)}")
-        elif b.type == ButtonType.SWITCH:
-            if b.dreftype == DrefType.DATA:
-                self.api.set_dataref_value(unit_dataref, 1)
-                logger.debug(f"set dataref {unit_dataref} to 1")
-            elif b.dreftype == DrefType.CMD:
-                self.execute_command(unit_dataref)
-                logger.debug(f"sent command {unit_dataref}")
-        else:
-            logger.warning(f"unhandled button type {b.type} for {b.label}")
+        if pressed:  # todo: move this cond inside report
+            report.activate(mcdu=self, pressed=pressed)
 
     def change_mcdu_unit(self) -> int:
         # To do:
@@ -572,45 +509,37 @@ class MCDU(WinwingDevice):
         logger.info(f"aircraft is now {self.icao}")
         return self.icao
 
-    def do_key_release(self, key_id: int):
-        b = self._buttons_by_id.get(key_id)
-        if b is None:
-            logger.warning(f"button id {key_id} not found")
-            return
-        if b.type == ButtonType.SWITCH:
-            logger.debug(f"button {b.label} released")
-            unit_dataref = self.aircraft.set_mcdu_unit(str_in=b.dataref, mcdu_unit=self.device.mcdu_unit_id)
-            self.api.set_dataref_value(unit_dataref, 0)
-            logger.debug(f"set dataref {unit_dataref} to 0")
-
     def do_sensors(self, data_in):
         w = False
         v = 256 * int(data_in[18]) + int(data_in[17])
-        dl = v - self._left_sensor
+        dl = v - self.sensors["left"]
         if abs(dl) > self._sensor_delta:
             w = True
-            self._left_sensor = v
+            self.sensors["left"] = v
         v = 256 * int(data_in[20]) + int(data_in[19])
-        dr = v - self._right_sensor
+        dr = v - self.sensors["right"]
         if abs(dr) > self._sensor_delta:
             w = True
-            self._right_sensor = v
+            self.sensors["right"] = v
         if w:
-            logger.debug(f"sensors: left {self._left_sensor} ({dl}), right {self._right_sensor} ({dr})")
+            logger.debug(f"sensors: left {self.sensors['left']} ({dl}), right {self.sensors['right']} ({dr})")
 
-    def set_brightness(self, dataref, value):
-        bl = list(filter(lambda x: x.dataref == dataref, self.buttons))
-        if len(bl) == 1:
-            b = bl[0]
-            if b is not None:
-                if b.led is None:
-                    logger.debug(f"dataref {dataref} not led")
-                    return
-                v = max(0, min(value, 255))
-                logger.debug(f"led: {b.led}, value: {v}")
-                self.device.set_brightness(backlight=b.led, brightness=int(v))
-        else:
-            logger.warning(f"dataref {dataref} not found")
+        if not BRIGHTNESS_AUTO_ADJUST:
+            return
+        # Auto adjust back light brightness
+        GLOBAL_BRIGHTNESS = "_global"
+        avg = int((self.sensors["left"] + self.sensors["right"]) / 2)
+        maxlevel = 100000
+        for r in BRIGHTNESS_AUTO_ADJUST:
+            if maxlevel > avg >= r[0]:
+                if self.brightness.get(GLOBAL_BRIGHTNESS, "") != r[3]:
+                    self.device.set_brightness(backlight=MCDU_BRIGHTNESS.BACKLIGHT, brightness=r[1])
+                    self.device.set_brightness(backlight=MCDU_BRIGHTNESS.SCREEN_BACKLIGHT, brightness=r[2])
+                    logger.info(f"brightness auto adjust to {r[3]}")
+                    logger.debug(f"brightness auto adjust: {r[3]} ({avg}): keyboard: {r[1]}, LCD: {r[2]}")
+                    self.brightness[GLOBAL_BRIGHTNESS] = r[3]
+                    break
+            maxlevel = r[0]
 
     def set_annunciator(self, annunciator: MCDU_ANNUNCIATORS, on: bool = True):
         self.device.set_led(led=annunciator, on=on)
@@ -723,7 +652,7 @@ class MCDUDisplay:
         self.terminal = None  # MCDUColorTerminal()
 
         self.page = [[" " for _ in range(PAGE_BYTES_PER_LINE)] for _ in range(PAGE_LINES)]
-        self.required_datarefs = set()
+        self.display_datarefs = set()
         self.mcdu_units = set()
         self.datarefs = {}
 
@@ -738,7 +667,7 @@ class MCDUDisplay:
         self.aircraft = aircraft
 
     def set_display_datarefs(self, dataref_list: set, mcdu_units: set):
-        self.required_datarefs = dataref_list
+        self.display_datarefs = dataref_list
         self.mcdu_units = mcdu_units
 
     def clear_page(self):
@@ -765,7 +694,7 @@ class MCDUDisplay:
 
         # Heading
         title = "WINWING for X-Plane"
-        idx = title.index("G") + int((PAGE_CHARS_PER_LINE - len(title))/2)
+        idx = title.index("G") + int((PAGE_CHARS_PER_LINE - len(title)) / 2)
         center_line(0, title, COLORS.DEFAULT)
         self.page[0][idx * PAGE_BYTES_PER_CHAR] = COLORS.RED
 
@@ -780,7 +709,7 @@ class MCDUDisplay:
             center_line(12, "github.com/devleaks", COLORS.DEFAULT, True)
             title = "/pywinwing"
             center_line(13, title, COLORS.DEFAULT, True)
-            idx = title.index("g") + int((PAGE_CHARS_PER_LINE - len(title))/2)
+            idx = title.index("g") + int((PAGE_CHARS_PER_LINE - len(title)) / 2)
             self.page[13][idx * PAGE_BYTES_PER_CHAR] = COLORS.RED
         self.device.display_page(page=self.page)
         if extra:
@@ -795,11 +724,11 @@ class MCDUDisplay:
         i = 0
         for c in COLORS:
             if i < 14:
-                self.write_line_to_page(i, 0,  lines[i%len(lines)], c, False)
+                self.write_line_to_page(i, 0, lines[i % len(lines)], c, False)
                 i = i + 1
         for c in COLORS:
             if i < 14:
-                self.write_line_to_page(i, 0,  lines[i%len(lines)], c, False)
+                self.write_line_to_page(i, 0, lines[i % len(lines)], c, False)
                 i = i + 1
         self.device.display_page(page=self.page)
         sleep(10)
@@ -825,11 +754,11 @@ class MCDUDisplay:
         self.device.display_page(page=self.page if page is None else page)
 
     def all_datarefs_available_count(self) -> bool:
-        avail_drefs = filter(lambda x: x in self.required_datarefs, self.datarefs)
+        avail_drefs = filter(lambda x: x in self.display_datarefs, self.datarefs)
         return len(list(avail_drefs))
 
     def all_datarefs_available(self) -> bool:
-        return self.all_datarefs_available_count() == len(self.required_datarefs)
+        return self.all_datarefs_available_count() == len(self.display_datarefs)
 
     def variable_changed(self, dataref: str, value):
         self.datarefs[dataref] = value
@@ -847,12 +776,12 @@ class MCDUDisplay:
             return
 
         if not self.all_datarefs_available():
-            # if (len(self.required_datarefs) - self.all_datarefs_available_count()) < 4:
-            #     print("still missing", set(self.required_datarefs) - set(self.datarefs.keys()))
+            # if (len(self.display_datarefs) - self.all_datarefs_available_count()) < 4:
+            #     print("still missing", set(self.display_datarefs) - set(self.datarefs.keys()))
             return
 
         if not self._all_ok:
-            logger.debug(f"all {len(self.required_datarefs)} required dataref available")
+            logger.debug(f"all {len(self.display_datarefs)} required dataref available")
             self._all_ok = True
 
         self._updated.set()

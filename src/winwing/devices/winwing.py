@@ -1,3 +1,5 @@
+"""Abstract base class for all Winwing Devices like MCDU, EFIS, FCU, etc.
+"""
 import logging
 from abc import ABC, abstractmethod
 
@@ -9,6 +11,8 @@ logger = logging.getLogger(__name__)
 class WinwingDevice(ABC):
 
     WINWING_VENDOR_IDS = [16536]
+    WINWING_PRODUCT_IDS = []
+    VERSION = "0.0.1"
 
     def __init__(self, vendor_id: int, product_id: int):
         self.vendor_id = vendor_id

@@ -1,5 +1,5 @@
-author: FlightFactor and ToLiss
-icao: A359
+author: GlidingKiwi
+icao: A339
 # variant: none
 mcdu-units: [1, 2]
 device-reports:
@@ -712,10 +712,10 @@ simulator-reports:
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1VertSlewKeys
   action: refresh-display
-# - report-type: simulator-value-change
-#   simulator-value-name: AirbusFBW/PanelBrightnessLevel
-#   action: set-device-value
-#   device-value-name: KeyboardBacklight
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/PanelBrightnessLevel
+  action: set-device-value
+  device-value-name: KeyboardBacklight
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/DUBrightness[6]
   action: set-device-value
@@ -724,4 +724,3 @@ simulator-reports:
   simulator-value-name: AirbusFBW/DUBrightness[7]
   action: set-device-value
   device-value-name: LCDBacklight
-

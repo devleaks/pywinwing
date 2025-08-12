@@ -1,9 +1,8 @@
-#         Python Stream Deck Library
-#      Released under the MIT license
-#
-#   dean [at] fourwalledcubicle [dot] com
-#         www.fourwalledcubicle.com
-#
+"""Device Manager
+
+Helper class to collect and display device information
+
+"""
 import logging
 from typing import List
 

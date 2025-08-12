@@ -1,9 +1,16 @@
-"""
+"""Aircraft class for ToLiss Airbus aircraft, probably all of them.
+
+This Aircraft class is completed with one aircraft configuration file for each Airbus
+model (A321, A330, etc.).
+The configuration file list datarefs and commands used by/for each aircraft.
+
 """
 
 import logging
 import re
-from typing import Set
+from typing import Set, List
+
+from winwing.devices import mcdu
 
 from .mcdu_aircraft import MCDUAircraft
 from .device import SPECIAL_CHARACTERS
@@ -37,7 +44,7 @@ logger = logging.getLogger(__name__)
 MCDU_DISPLAY_DATA = "AirbusFBW/MCDU(?P<unit>[1-3]+)(?P<name>(title|stitle|label|cont|scont|sp)+)(?P<line>[1-6]*)(?P<large>[L]*)(?P<color>[abgmswy]+)"
 
 
-class ToLissAircraft(MCDUAircraft):
+class ToLissAirbus(MCDUAircraft):
 
     AIRCRAFT_KEYS = [
         MCDUAircraft.key(icao="A321", author="Gliding Kiwi"),
@@ -66,6 +73,10 @@ class ToLissAircraft(MCDUAircraft):
 
     def get_mcdu_unit(self, dataref) -> int:
         mcdu_unit = -1
+        if dataref == "AirbusFBW/DUBrightness[6]":  # MCDU screen brightness unit 1
+            return 1
+        elif dataref == "AirbusFBW/DUBrightness[7]":  # MCDU screen brightness unit 2
+            return 2
         try:
             m = None
             if "VertSlewKeys" in dataref:
@@ -82,6 +93,11 @@ class ToLissAircraft(MCDUAircraft):
         return mcdu_unit
 
     def set_mcdu_unit(self, str_in: str, mcdu_unit: int):
+        if str_in.startswith("AirbusFBW/DUBrightness"):
+            if mcdu_unit == 1:
+                return "AirbusFBW/DUBrightness[6]"
+            elif mcdu_unit == 2:
+                return "AirbusFBW/DUBrightness[7]"
         if mcdu_unit == 2:
             return re.sub(r"MCDU[123]", "MCDU2", str_in)
         elif mcdu_unit == 3:
@@ -138,7 +154,9 @@ class ToLissAircraft(MCDUAircraft):
         self.lines[f"AirbusFBW/MCDU{mcdu_unit}sp"] = self.get_line_extra(mcdu_unit=mcdu_unit, what=["sp"], colors="aw")[0]
 
     def update_label(self, dataref: str, value, mcdu_unit: int, line: int):
-        self.lines[f"AirbusFBW/MCDU{mcdu_unit}label{line}"] = self.get_line(mcdu_unit=mcdu_unit, line=line, what=["label"], colors=TOLISS_MCDU_LINE_COLOR_CODES)[0]
+        self.lines[f"AirbusFBW/MCDU{mcdu_unit}label{line}"] = self.get_line(
+            mcdu_unit=mcdu_unit, line=line, what=["label"], colors=TOLISS_MCDU_LINE_COLOR_CODES
+        )[0]
 
     def update_line(self, dataref: str, value, mcdu_unit: int, line: int):
         lines = self.get_line(mcdu_unit=mcdu_unit, line=line, what=["cont", "scont"], colors=TOLISS_MCDU_LINE_COLOR_CODES)
@@ -267,3 +285,29 @@ class ToLissAircraft(MCDUAircraft):
             page[PAGE_LINES - 1][c + 2] = chr(SPECIAL_CHARACTERS.ARROW_DOWN.value)
 
         return page
+
+    def simulator_reports(self) -> List:
+        """Returns simulator feedback for device handling.
+
+        Supplied information is sufficient to perform necessary action for key.
+
+        Returns
+
+            List[Dict]:
+
+        """
+        if not self.loaded:
+            return {}
+        simulator_reports = self._config.get("simulator-reports", [])
+        newrpts = []
+        for sim_report in simulator_reports:
+            if sim_report.get("report-type", "") == "simulator-value-change":
+                dref = sim_report.get("simulator-value-name", "")
+                if ToLissAirbus.is_display_dataref(dref):
+                    for unit in self.mcdu_units:
+                        if unit == 1:  # assumes config use MCDU unit 1...
+                            continue
+                        add_report = sim_report.copy()
+                        add_report["simulator-value-name"] = self.set_mcdu_unit(str_in=dref, mcdu_unit=unit)
+                        newrpts.append(add_report)
+        return simulator_reports + newrpts

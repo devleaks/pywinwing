@@ -1,4 +1,5 @@
-"""
+"""This is a abstract class for all aircrafts as used by the MCDU.
+
 """
 
 from abc import abstractmethod
