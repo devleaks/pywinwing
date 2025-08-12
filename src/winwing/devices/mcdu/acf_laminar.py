@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 MCDU_DISPLAY_DATA = "sim/cockpit2/radios/indicators/fms_cdu(?P<unit>[1-2]+)_(?P<name>(text|style)+)_line(?P<line>[0-9]+)"
 
 
-class LaminarAircraft(MCDUAircraft):
+class LaminarAirbus(MCDUAircraft):
 
     AIRCRAFT_KEYS = [
         MCDUAircraft.key(icao="A333", author="Alex Unruh, Rodrigo Fernandez, Massimo Durando, Jim Gregory, Marco Auer"),

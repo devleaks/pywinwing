@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 MCDU_DISPLAY_DATA = "AirbusFBW/MCDU(?P<unit>[1-3]+)(?P<name>(title|stitle|label|cont|scont|sp)+)(?P<line>[1-6]*)(?P<large>[L]*)(?P<color>[abgmswy]+)"
 
 
-class ToLissAircraft(MCDUAircraft):
+class ToLissAirbus(MCDUAircraft):
 
     AIRCRAFT_KEYS = [
         MCDUAircraft.key(icao="A321", author="Gliding Kiwi"),
@@ -303,7 +303,7 @@ class ToLissAircraft(MCDUAircraft):
         for sim_report in simulator_reports:
             if sim_report.get("report-type", "") == "simulator-value-change":
                 dref = sim_report.get("simulator-value-name", "")
-                if ToLissAircraft.is_display_dataref(dref):
+                if ToLissAirbus.is_display_dataref(dref):
                     for unit in self.mcdu_units:
                         if unit == 1:  # assumes config use MCDU unit 1...
                             continue
