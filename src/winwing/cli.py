@@ -18,6 +18,7 @@ options:
                         DEVELOPER ONLY - adds extension folders to application
 """
 import sys
+# sys.path.append("<path-to-cloned-pywinwing-github-repository>/src")
 import os
 import logging
 import argparse
@@ -34,7 +35,7 @@ from xpwebapi import ws_api, beacon
 
 from winwing import version
 from winwing.devices import WinwingDevice
-from .device_manager import DeviceManager
+from winwing.device_manager import DeviceManager
 
 FORMAT = "[%(asctime)s] %(levelname)s %(threadName)s %(filename)s:%(funcName)s:%(lineno)d: %(message)s"
 logging.basicConfig(level=logging.INFO, format=FORMAT, datefmt="%H:%M:%S")
