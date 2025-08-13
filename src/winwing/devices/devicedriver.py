@@ -14,18 +14,23 @@ logger = logging.getLogger(__name__)
 
 
 class DeviceDriver(ABC):
+
     def __init__(self):
+        self.device = None
+
+        self.callback = None
+
+        self._last_read = bytes(0)
 
         self.reader = threading.Event()
         self.reader.set()
         self.reader_thread: threading.Thread
-        self.callback = None
-        self._last_read = bytes(0)
         self.busy_writing = threading.Lock()
         self.init()
 
+    @abstractmethod
     def init(self):
-        pass
+        raise NotImplementedError
 
     def set_callback(self, callback):
         self.callback = callback
@@ -61,4 +66,5 @@ class DeviceDriver(ABC):
 
     def terminate(self):
         self.stop()
-        self.device.close()
+        if self.device is not None:
+            self.device.close()

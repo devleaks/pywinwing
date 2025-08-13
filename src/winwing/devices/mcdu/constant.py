@@ -122,9 +122,29 @@ class Color:
 
 BACKGROUND_COLOR = [0x00, 0x00, 0x00]
 
+# MobiFlight use:
+# "a" // amber
+# "w" // white
+# "c" // cyan
+# "g" // green
+# "m" // magenta
+# "r" // red
+# "y" // yellow
+# "o" // brown
+# "e" // grey
+# "k" // khaki
+#
+# '\u2610'  # ballot box
+# '\u2191'  # up arrow
+# '\u2193'  # down arrow
+# '\u2192'  # right arrow
+# '\u2190'  # left arrow
+# '\u0394'  # Greek Delta for overfly
+#
+COLOR_MASKS = [i * 0x0021 for i in range(10)]
 
 class COLORS(Enum):
-    BLACK = Color(name="black", key="l", ww_mask=0x0000, term="\033[38;5;0m", rgb=(0, 0, 0))  # L
+    BLACK = Color(name="black", key="l", ww_mask=0x0000, term="\033[38;5;0m", rgb=(0, 0, 0))  # L, Should be brown, o
     AMBER = Color(name="amber", key="a", ww_mask=0x0021, term="\033[38;5;208m", rgb=(255, 179, 0))
     WHITE = Color(name="white", key="w", ww_mask=0x0042, term="\033[38;5;231m", rgb=(255, 255, 255))
     CYAN = Color(name="cyan", key="b", ww_mask=0x0063, term="\033[38;5;39m", rgb=(0, 255, 255))
@@ -132,7 +152,7 @@ class COLORS(Enum):
     MAGENTA = Color(name="magenta", key="m", ww_mask=0x00A5, term="\033[38;5;165m", rgb=(255, 99, 255))
     RED = Color(name="red", key="r", ww_mask=0x00C6, term="\033[38;5;196m", rgb=(255, 0, 0))
     YELLOW = Color(name="yellow", key="y", ww_mask=0x00E7, term="\033[38;5;226m", rgb=(255, 255, 0))
-    YGREY = Color(name="yellowgrey", key="x", ww_mask=0x0108, term="\033[38;5;221m", rgb=(97, 92, 66))  # X
+    KAKI = Color(name="kaki", key="x", ww_mask=0x0108, term="\033[38;5;221m", rgb=(97, 92, 66))  # X, k
     GREY = Color(name="grey", key="e", ww_mask=0x0129, term="\033[38;5;251m", rgb=(119, 119, 119))  # E
     DEFAULT = Color(name="white", key="w", ww_mask=0x0042, term="\033[38;5;231m", rgb=(255, 255, 255))
 

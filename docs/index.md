@@ -54,13 +54,15 @@ options:
   -v, --verbose         shows more information
   -l, --list            lists Wingwing devices connected to the system
   -a, --list-all        lists all HID devices connected to the system
+  --port PORT           TCP port for X-Plane Web API
   --use-beacon          REMOTE USE ONLY - attempt to use X-Plane UDP beacon to discover network address
   --host HOST           REMOTE USE ONLY - host IP name or address for X-Plane Web API
-  --port PORT           TCP port for X-Plane Web API
   --aircraft acf.yaml   DEVELOPER ONLY - uses this aircraft configuration file
   --extension ext_dir [ext_dir ...]
                         DEVELOPER ONLY - adds extension folders to application
 ```
+
+As a normal use, you can ignore *REMOTE USE ONLY* and *DEVELOPER ONLY* options.
 
 
 ## Important Note
@@ -71,8 +73,13 @@ In case of problem, misbehavior, errors... simply stop the application and resta
 If problem persists, enter an issue on github.
 
 MCDU display sometimes get de-synchronized.
+To recognize this state, start `winwing-cli` and nothing will display on the MCDU device,
+not even a welcome screen, it will remain black, which is unusual.
+
 To re-synchronize it, unplug the Winwing MCDU device for a few seconds and plug it in back.
 Restart `winwing-cli`.
+
+This event is still under investigation and rarely appears, however, I prefer to mention it here.
 
 
 # More Devices

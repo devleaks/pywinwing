@@ -2,6 +2,9 @@
 
 The package is a framework that facilitates the addition of devices and aircraft specifics into the same application.
 
+Given the positive news that [more devices will soon come](https://fsnews.eu/winwing-announces-new-peripherals-at-fsexpo-2025/),
+pywinwing has a framework to handle them all.
+
 
 # Custom Aircraft
 

@@ -12,12 +12,12 @@ import logging
 import inspect
 
 from abc import ABC
-from typing import Tuple, Dict, Any, Set, List
+from typing import Tuple, Dict, Set, List
 
 from ruamel.yaml import YAML
 
 from winwing.devices import WinwingDevice
-from winwing.devices.mcdu import device
+
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -38,8 +38,8 @@ class Aircraft(ABC):
         self._config = None
 
     @staticmethod
-    def key(author: str, icao: str) -> str:
-        return f"{icao}::{author}"
+    def key(author: str, icao: str, variant: str = "") -> str:
+        return f"{icao}:{variant}:{author}"
 
     @staticmethod
     def pretty_author(author: str) -> str:
@@ -54,7 +54,7 @@ class Aircraft(ABC):
         return n
 
     @staticmethod
-    def new(author: str, icao: str, extension_paths: List[str] = []):
+    def new(author: str, icao: str, variant: str = "", extension_paths: List[str] = []):
         """Create aircraft for supplied (author, icao)
 
         If no device aircraft can be found, returns None
@@ -68,7 +68,7 @@ class Aircraft(ABC):
         """
 
         adapters = Aircraft.adapters()
-        key = Aircraft.key(author=author, icao=icao)
+        key = Aircraft.key(author=author, icao=icao, variant=variant)
         reqacf = list(filter(lambda x: key in x.AIRCRAFT_KEYS, adapters))
         logger.debug(f"aircraft adapters for {icao},{author}: {reqacf}")
         if len(reqacf) == 0:
@@ -102,9 +102,10 @@ class Aircraft(ABC):
                     if type(data) is dict:
                         author = data.get("author")
                         icao = data.get("icao")
+                        variant = data.get("variant", "")
                         if author is not None and icao is not None:
                             data["__filename__"] = file
-                            aircrafts[Aircraft.key(author=author, icao=icao)] = data
+                            aircrafts[Aircraft.key(author=author, icao=icao, variant=variant)] = data
         if len(aircrafts) == 0:
             logger.warning("no available aircraft")
             return {}
@@ -151,14 +152,12 @@ class Aircraft(ABC):
     def load_from_data(cls, data):
         author = data.get("author")
         icao = data.get("icao")
-        a = Aircraft.new(author=author, icao=icao)
+        variant = data.get("variant", "")
+        a = Aircraft.new(author=author, icao=icao, variant=variant)
         # If using a config file, aircraft will be found, but no data attached to it
         # Data is added here.
         if a is not None:
             a._config = data
-            v = data.get("variant")
-            if v is not None:
-                a.variant = v
             return a
         logger.warning(f"cannot create aircraft for {icao}, {author}")
         return None
@@ -173,11 +172,16 @@ class Aircraft(ABC):
                 config = yaml.load(fp)
             return Aircraft.load_from_data(data=config)
         except:
-            logger.warning(f"cannot load aircraft configuration file {filename}")
+            logger.warning(f"cannot load aircraft configuration file {filename}", exc_info=True)
 
     @property
     def loaded(self) -> bool:
         return self._config is not None
+
+    def same_variant(self, variant) -> bool:
+        if variant is None or self.variant is None:
+            return True
+        return self.variant == variant
 
     def init(self, device: WinwingDevice) -> bool:
         """Convenience function that can be used to adjust aircraft properties
@@ -202,7 +206,6 @@ class Aircraft(ABC):
 
     def load(self, prefix: str = ""):
         fn = self.config_filename(prefix=prefix, extension="_new.yaml")
-        print(">>>>>>>>>>>>>>>>>", fn)
         if not os.path.exists(fn):
             logger.warning(f"aircraft file {fn} not found")
             return

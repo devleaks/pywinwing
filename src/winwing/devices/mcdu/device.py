@@ -66,6 +66,7 @@ class MCDUDevice(HIDDevice):
         return mcdu_unit
 
     def init(self):
+        super().init() #  creates the device
         for s in MCDU_INIT_SEQUENCE:
             self.device.write(bytes(s))
 
