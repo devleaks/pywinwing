@@ -1,0 +1,92 @@
+# Proposed device configuration file
+
+A device or the simulator sends a report (name loosely inspired by HID protocol).
+
+Reports have a "type", and depending on their type, carry information or value they transfer.
+That's what this file attempts to show.
+
+Device reports are sent by HID device. They carry some information. For example, a "key-pressed"
+report is issued when a key is pressed, and the information it carries it the name or identifier
+of the key that was pressed.
+
+This file explain what must be done when that report is received: the action that must be carried over.
+
+Similarly, the simulator also sends messages on the Web socket, reflecting simulator variable changes,
+or executed commands.
+
+In turn, these simulator-reports trigger actions on the device: refresh the display (set-display),
+turn this LED on or off, adjust screen brightness or keyboard backlight...
+
+## REPORTS (`report-type`)
+
+Simulator report:
+
+  - simulator-value-change, parameter: simulator-value-name
+  - simulator-command-active, parameter: simulator-command-name
+
+MCDU Device Reports:
+
+  - key-press, parameter: key-name
+  - device-value-change, parameter: device-value-name
+
+
+## ACTIONS (what to do when report received)
+
+Simulator actions:
+
+  - execute-simulator-command, parameter: simulator-command-name
+  - set-simulator-value, parameter: simulator-value-name
+
+MCDU actions:
+
+  - set-device-value, parameter: device-value-name
+  - set-device-led, parameter: device-led-name
+
+
+## Example of Configuration File
+
+Here are some portion of configuration file to illustrate above directives:
+
+```yaml
+device-reports:
+
+    - report-type: key-press
+      key-index: 0
+      key-name: LSK1L
+      action: execute-simulator-command
+      simulator-command-name: AirbusFBW/MCDU1LSK1L
+
+    - report-type: device-value-change
+      device-value-index: 74
+      device-value-name: LCDBright1
+      action: set-simulator-value
+      simulator-value-name: AirbusFBW/DUBrightness[6]
+
+simulator-reports:
+
+    - report-type: simulator-value-change
+      simulator-value-name: AirbusFBW/MCDU1VertSlewKeys
+      action: refresh-display
+
+    - report-type: simulator-value-change
+      simulator-value-name: AirbusFBW/MCDU1VertSlewKeys
+      action: refresh-display
+
+    - report-type: simulator-value-change
+      simulator-value-name: sim/aircraft/view/acf_author
+      action: change-aircraft
+
+    - report-type: simulator-value-change
+      simulator-value-name: sim/aircraft/view/acf_ICAO
+      action: change-aircraft
+
+    - report-type: simulator-command-active
+      simulator-command-name: sim/map/show_current
+      action: set-device-led
+      device-led-name: status
+
+    - report-type: simulator-plugin-event
+      simulator-event-name: new-scenery-loaded
+      action: some-future-action
+
+```

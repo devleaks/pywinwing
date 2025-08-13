@@ -29,6 +29,10 @@ nav:
   - Changelog: changelog.md
 - Usage: usage.md
 - Reference: reference.md
+- Extension:
+  - Developer Notes: devnotes.md
+  - Remote Access: remote.md
+  - Action/Report Configuration File Format: report.md
 
 markdown_extensions:
 - pymdownx.snippets

@@ -1,42 +1,6 @@
 # pywinwing Developer Notes
 
-The content of this file will be transfered to github wiki for information.
-
-
-## Same host
-
-In normal operations, when everything is connected to the same computer, it is suffisent to type
-
-```
-winwing-cli
-```
-
-`winwing-cli will try to connect to all devices available on the computer and load the aircraft currently loaded in X-Plane specifics to set the display on devices accordingly.
-
-If a device is not supported, it is ignored.
-
-If a currently loaded aircraft is not adapted for the devices, the aircraft is not loaded.
-
-In both cases, warning messages are issued on the console.
-
-
-## Remote host
-
-It is possible to use device connected to one computer with X-Plane running on another computer. Winwing-cli must run on the computer where the devices are connected. In this case, winwing-cli will automatically connect the the X-Plane instance it find on the local area network.
-
-Networking options are:
-
-```
-winwing-cli --use-beacon
-```
-Monitors X-Plane UDP beacon to set up network parameters automatically. (The message in the beacon contains the necessary information.)
-
-If no beacon is found, explicit hostname and port can be supplied on command line
-
-```
-winwing-cli --host host_with_xplane --port 8080
-```
-THe port number should be TCP port number of the proxy server installed where X-Plane runs.
+The package is a framework that facilitates the addition of devices and aircraft specifics into the same application.
 
 
 # Custom Aircraft
@@ -47,6 +11,7 @@ There are two parts to an aircraft.
 
 1. An optional python class, derived from `Aircraft` class.
 2. An accompagnying configuration data file, containing data for the above class (list of dataref to fetch, commands to issue, etc.)
+
 
 ## Custom Aircraft Class
 
@@ -78,13 +43,37 @@ When an aircraft is proven working, it can be included in pywinwing standard dis
 Please submit a pull request on github to do so.
 
 
-# Base Classes for adding a new devices or aircraft
+# Adding a new Winwing Device
 
-- Coordinator (derived from WinwingDevice), which includes connection to X-Plane
-- Device adapter (derived from Device or HIDDevice), HID operations to/from the device
-- Aircraft adapter (derived from Aircraft): parameters, datarefs, commands, data
+Winwing Devices are derived from the python WinwingDevice class.
+A WinwingDevice has a "hardware adapter" (device driver) that reads "messages" sent by the hardware device
+and transmit them to the application through a Device Report instance.
+Upon receipt of a Report, the application executes the appropriate Action.
 
+Aircraft specifics are derived from a python Aircraft class.
+The Aircraft class has the ability to read a configuration file to customize its behavior.
+In X-Plane, Aircraft are identified by their ICAO code and their author(s) name(s).
+Additionnally, there is room for a "variant" additional attribute. (NEO engine variants, configurations, etc.)
 
-# Adding a new Device
+Communication with the simulator is offered through the [X-Plane Web API](https://devleaks.github.io/xplane-webapi/) python package.
+The application receives "messages" sent by the simulator through a Simulator Report instance.
 
-Later.
+For developer, the Winwing package has a structure ready for extensibility.
+New device packages are added to `winwing.devices`.
+New device or aircraft configuration files are added to `winwing.assets`.
+
+Main class is `winwing.devices.WinwingDevice`;
+helper classes are in `winwing.helpers`: `Action`, `Report`, and `Aircraft`.
+
+Winwing Application provides the following:
+
+- A HIDDevice hardware adapter
+- A MCDU device handler, which works for several Airbus aircraft
+- A MCDU aircraft handler for ToLiss Airbus and Laminar 'stock' Airbus (A330-200)
+
+The handler for ToLiss Airbus has aircraft configuration files for
+- A321, A21N,
+- A330-900,
+- Flight Factor and ToLiss A350-900
+It shouldn't be difficult to add configuration files for other ToLiss aircrafts
+(A319, A320neo, and forthcoming A320 ceo, and may be A340-600.)
