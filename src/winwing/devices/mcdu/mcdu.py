@@ -58,7 +58,7 @@ class MCDU(WinwingDevice):
     """
 
     WINWING_PRODUCT_IDS = [47926, 47930, 47934]
-    VERSION = "0.10.1"
+    VERSION = "0.11.0"
 
     def __init__(self, vendor_id: int, product_id: int, **kwargs):
         WinwingDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
@@ -382,6 +382,9 @@ class MCDU(WinwingDevice):
             self.display.message("no aircraft")
             self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.FAIL, on=True)
             return
+        # self.status = MCDU_STATUS.CONNECTED
+        # self.aircraft.wait_for_aircraft_variant(api=self)
+        # self.status = MCDU_STATUS.AIRCRAFT_DETECTED
         if not self._ready:
             self.display.message("waiting for data...")
         self.status = MCDU_STATUS.WAITING_FOR_DATA

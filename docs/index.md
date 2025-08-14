@@ -30,9 +30,15 @@ Nothing more, nothing less. Couldn't be simpler.
 
 It is advisable to create and use a dedicated python environment.
 
+To install the Winwing application, issue the following command
+to install the appropriate python package and its dependencies:
+
 ```sh
 pip install 'winwing @ git+https://github.com/devleaks/pywinwing.git'
 ```
+
+Partof the installation of the above package is
+the installation of a command that can be executed from the prompt.
 
 
 # Usage
@@ -84,6 +90,7 @@ This event is still under investigation and rarely appears, however, I prefer to
 
 # More Devices
 
-The package is a framework that facilitates the addition of devices and aircraft specifics into the same application.
+The package is more that the Winwing application.
+It is a framework that facilitates the addition of devices and aircraft specifics into the same application.
 
 See developer notes on the menu / side bar.

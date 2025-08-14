@@ -12,6 +12,7 @@ import logging
 import inspect
 
 from abc import ABC
+from time import sleep
 from typing import Tuple, Dict, Set, List
 
 from ruamel.yaml import YAML
@@ -31,10 +32,11 @@ class Aircraft(ABC):
 
     AIRCRAFT_KEYS = []
 
-    def __init__(self, author: str, icao: str, variant: str | None = None) -> None:
+    def __init__(self, author: str, icao: str, variant: str = "") -> None:
+        self._ready = False
         self.author = author
         self.icao = icao
-        self.variant = variant
+        self._variant = variant
         self._config = None
 
     @staticmethod
@@ -178,11 +180,6 @@ class Aircraft(ABC):
     def loaded(self) -> bool:
         return self._config is not None
 
-    def same_variant(self, variant) -> bool:
-        if variant is None or self.variant is None:
-            return True
-        return self.variant == variant
-
     def init(self, device: WinwingDevice) -> bool:
         """Convenience function that can be used to adjust aircraft properties
            depending on device and/or API used
@@ -271,3 +268,75 @@ class Aircraft(ABC):
         if not self.loaded:
             return {}
         return self._config.get("simulator-reports", [])
+
+    #
+    # Aircraft Variant Management
+    # Aircraft variants have the same ICAO and author but have different options
+    # or add-on available that change the behavior of the aircraft.
+    #
+    @property
+    def variant(self) -> str:
+        return self._variant
+
+    @variant.setter
+    def variant(self, variant):
+        self._variant = variant
+
+    def same_variant(self, variant) -> bool:
+        """Compare two aicraft variants if they are set.
+
+        If one if not set, returns that they are equivalent.
+
+        returns:
+
+        (bool): Aircraft variants equivalence
+
+        """
+        if variant is None or self.variant is None:
+            return True
+        return self.variant == variant
+
+    def variant_datarefs(self) -> Set[str]:
+        """Returns list of datarefs necessary for variant determination.
+
+        returns
+            (Set): List of datarefs necessary for variant determination
+        """
+        return set(["sim/cockpit2/clock_timer/zulu_time_hours"])
+
+    def variant_key(self) -> str:
+        """Build variant string from variant dataref values
+
+        This allows to inspect one or more datarefs and determine the aicraft
+        variant from those datarefs.
+
+        returns:
+            (str): Variant identification
+        """
+        return ""
+
+    def wait_for_aircraft_variant(self, api):
+        """Wait for value of aicraft variant datarefs
+        """
+        vdrefs = self.variant_datarefs()
+        if len(vdrefs) == 0:
+            logger.info("aicraft has not variant")
+            return
+        api.register_datarefs(paths=self.variant_datarefs())
+        if not self._ready:
+            api.display.message("waiting for aircraft variant...")
+        variant = self.variant_key()
+        key = Aircraft.key(author=self.author, icao=self.icao, variant=variant)
+        warning_count = 0
+        if key not in api.VALID_AIRCRAFTS:
+            while key not in api.VALID_AIRCRAFTS:
+                if warning_count <= MAX_WARNING_COUNT:
+                    last_warning = " (last warning)" if warning_count == MAX_WARNING_COUNT else ""
+                    logger.warning(f"waiting for valid aircraft (current {key} not in list {api.VALID_AIRCRAFTS.keys()}{last_warning}")
+                warning_count = warning_count + 1
+                sleep(2)
+                variant = self.variant_key()
+                key = Aircraft.key(author=self.author, icao=self.icao, variant=variant)
+        self.variant = variant
+        logger.info(f"{self.author} {self.icao} {self.variant} detected")
+        # no change to status lights, we still need the data

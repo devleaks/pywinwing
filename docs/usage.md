@@ -1,7 +1,7 @@
 # pywinwing - Winwing Devices to X-Plane
 
 
-The installation process creates a new command that can be executed from the prompt in a terminal window.
+The installation process creates a command that can be executed from the prompt in a terminal window.
 
 
 ```
@@ -31,7 +31,7 @@ If Winwing devices are connected to the computer running X-Plane, issue:
 winwing-cli
 ```
 
-The application will start, connect to X-Plane locally and start managing the device.
+The application will start, connect to X-Plane locally and start managing the device(s).
 
 
 # Use with Two Computers
