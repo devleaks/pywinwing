@@ -207,6 +207,8 @@ class ToLissAirbus(MCDUAircraft):
                         continue
                     if c < len(v):
                         if v[c] != " ":
+                            if color.startswith("L") and len(color) == 2:  # maps Lg, Lw to g, w.
+                                color = color[1]  # prevents "invalid color" further on
                             if color in COLORS_BY_MCDU_COLOR_KEY:
                                 has_char.append((v[c], COLORS_BY_MCDU_COLOR_KEY[color]))
                             else:
