@@ -509,6 +509,9 @@ simulator-reports:
   simulator-value-name: AirbusFBW/MCDU1cont6y
   action: refresh-display
 - report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label1a
+  action: refresh-display
+- report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1label1b
   action: refresh-display
 - report-type: simulator-value-change
@@ -518,10 +521,25 @@ simulator-reports:
   simulator-value-name: AirbusFBW/MCDU1label1Lg
   action: refresh-display
 - report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label1Lw
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label1m
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label1s
+  action: refresh-display
+- report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1label1w
   action: refresh-display
 - report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label1y
+  action: refresh-display
+- report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1label2a
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label2b
   action: refresh-display
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1label2g
@@ -530,7 +548,19 @@ simulator-reports:
   simulator-value-name: AirbusFBW/MCDU1label2Lg
   action: refresh-display
 - report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label2Lw
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label2m
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label2s
+  action: refresh-display
+- report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1label2w
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label2y
   action: refresh-display
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1label3a
@@ -545,7 +575,22 @@ simulator-reports:
   simulator-value-name: AirbusFBW/MCDU1label3Lg
   action: refresh-display
 - report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label3Lw
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label3m
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label3s
+  action: refresh-display
+- report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1label3w
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label3y
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label4a
   action: refresh-display
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1label4b
@@ -557,7 +602,22 @@ simulator-reports:
   simulator-value-name: AirbusFBW/MCDU1label4Lg
   action: refresh-display
 - report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label4Lw
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label4m
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label4s
+  action: refresh-display
+- report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1label4w
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label4y
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label5a
   action: refresh-display
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1label5b
@@ -569,7 +629,19 @@ simulator-reports:
   simulator-value-name: AirbusFBW/MCDU1label5Lg
   action: refresh-display
 - report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label5Lw
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label5m
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label5s
+  action: refresh-display
+- report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1label5w
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label5y
   action: refresh-display
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1label6a
@@ -578,7 +650,19 @@ simulator-reports:
   simulator-value-name: AirbusFBW/MCDU1label6b
   action: refresh-display
 - report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label6g
+  action: refresh-display
+- report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1label6Lg
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label6Lw
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label6m
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1label6s
   action: refresh-display
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1label6w
@@ -599,6 +683,9 @@ simulator-reports:
   simulator-value-name: AirbusFBW/MCDU1scont1m
   action: refresh-display
 - report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1scont1s
+  action: refresh-display
+- report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1scont1w
   action: refresh-display
 - report-type: simulator-value-change
@@ -615,6 +702,9 @@ simulator-reports:
   action: refresh-display
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1scont2m
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1scont2s
   action: refresh-display
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1scont2w
@@ -635,6 +725,9 @@ simulator-reports:
   simulator-value-name: AirbusFBW/MCDU1scont3m
   action: refresh-display
 - report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1scont3s
+  action: refresh-display
+- report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1scont3w
   action: refresh-display
 - report-type: simulator-value-change
@@ -651,6 +744,9 @@ simulator-reports:
   action: refresh-display
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1scont4m
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1scont4s
   action: refresh-display
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1scont4w
@@ -671,6 +767,9 @@ simulator-reports:
   simulator-value-name: AirbusFBW/MCDU1scont5m
   action: refresh-display
 - report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1scont5s
+  action: refresh-display
+- report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1scont5w
   action: refresh-display
 - report-type: simulator-value-change
@@ -684,6 +783,9 @@ simulator-reports:
   action: refresh-display
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1scont6m
+  action: refresh-display
+- report-type: simulator-value-change
+  simulator-value-name: AirbusFBW/MCDU1scont6s
   action: refresh-display
 - report-type: simulator-value-change
   simulator-value-name: AirbusFBW/MCDU1scont6w
