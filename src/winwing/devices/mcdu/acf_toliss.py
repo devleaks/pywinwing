@@ -31,8 +31,8 @@ TOLISS_MCDU_LINE_COLOR_CODES = [
     "w",
     "y",
     "s",  # special characters, not a color
-    "Lw",  # bold white, bright white
-    "Lg",  # bold white, bright green
+    "Lw",  # large white
+    "Lg",  # large green
 ]
 
 COLORS_BY_MCDU_COLOR_KEY = {c.key: c for c in COLORS}
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
 
 
-MCDU_DISPLAY_DATA = "AirbusFBW/MCDU(?P<unit>[1-3]+)(?P<name>(title|stitle|label|cont|scont|sp)+)(?P<line>[1-6]*)(?P<large>[L]*)(?P<color>[abgmswy]+)"
+MCDU_DISPLAY_DATA = r"AirbusFBW/MCDU(?P<unit>[1-3])(?P<name>(title|stitle|sp|label|cont|scont))(?P<line>[1-6]?)(?P<color>(Lw|Lg|[abgmswy]))"
 
 
 class ToLissAirbus(MCDUAircraft):
@@ -80,7 +80,7 @@ class ToLissAirbus(MCDUAircraft):
         try:
             m = None
             if "VertSlewKeys" in dataref:
-                m = re.match("AirbusFBW/MCDU(?P<unit>[1-3]+)VertSlewKeys", dataref)
+                m = re.match("AirbusFBW/MCDU(?P<unit>[1-3])VertSlewKeys", dataref)
             else:
                 m = re.match(MCDU_DISPLAY_DATA, dataref)
             if m is None:
@@ -115,18 +115,21 @@ class ToLissAirbus(MCDUAircraft):
             logger.warning(f"invalid MCDU unit {mcdu_unit} ({self.mcdu_units})")
             return
 
-        if "title" in dataref:
-            self.update_title(dataref=dataref, value=value, mcdu_unit=mcdu_unit)
-        elif "sp" in dataref:
-            self.update_sp(dataref, value, mcdu_unit=mcdu_unit)
-        else:
-            line = dataref[-2]
-            if line == "L":  # "color" Lg, Lw
-                line = dataref[-3]
-            if "label" in dataref:
-                self.update_label(dataref=dataref, value=value, mcdu_unit=mcdu_unit, line=line)
-            else:
-                self.update_line(dataref=dataref, value=value, mcdu_unit=mcdu_unit, line=line)
+        m = re.match(MCDU_DISPLAY_DATA, dataref)
+        if m is None:
+            logger.debug(f"not a display dataref {dataref}")
+            return
+
+        colors = TOLISS_MCDU_LINE_COLOR_CODES
+        line = -1
+        what = m.group("name")
+        if what.endswith("title"): # stitle, title
+            colors = "bgwys"
+        elif what == "sp":
+            colors = "aw"
+        else:  # label, scont, cont
+            line = int(m.group("line"))
+        self.update_line(mcdu_unit=mcdu_unit, line=line, what=what, colors=colors)
 
     def encode_bytes(self, dataref, value) -> str | bytes:
         try:
@@ -135,142 +138,98 @@ class ToLissAirbus(MCDUAircraft):
             logger.warning(f"cannot decode bytes for {dataref.name} (encoding=ascii)", exc_info=True)
         return value
 
-    def combine(self, l1, l2):
-        line = []
-        for i in range(24):
-            if l1[i][0] == " ":
-                line.append(l2[i])
-                continue
-            # if l2[i][0] != " ":
-            #     logger.debug(f"2 chars {l1[i]} / {l2[i]}")
-            line.append(l1[i])
-        return line
-
-    def update_title(self, dataref: str, value, mcdu_unit: int):
-        lines = self.get_line_extra(mcdu_unit=mcdu_unit, what=["title", "stitle"], colors="bgwys")
-        self.lines[f"AirbusFBW/MCDU{mcdu_unit}title"] = self.combine(lines[0], lines[1])
-
-    def update_sp(self, dataref: str, value, mcdu_unit: int):
-        self.lines[f"AirbusFBW/MCDU{mcdu_unit}sp"] = self.get_line_extra(mcdu_unit=mcdu_unit, what=["sp"], colors="aw")[0]
-
-    def update_label(self, dataref: str, value, mcdu_unit: int, line: int):
-        self.lines[f"AirbusFBW/MCDU{mcdu_unit}label{line}"] = self.get_line(
-            mcdu_unit=mcdu_unit, line=line, what=["label"], colors=TOLISS_MCDU_LINE_COLOR_CODES
-        )[0]
-
-    def update_line(self, dataref: str, value, mcdu_unit: int, line: int):
-        lines = self.get_line(mcdu_unit=mcdu_unit, line=line, what=["cont", "scont"], colors=TOLISS_MCDU_LINE_COLOR_CODES)
-        self.lines[f"AirbusFBW/MCDU{mcdu_unit}cont{line}"] = self.combine(lines[0], lines[1])
-
-    def get_line_extra(self, mcdu_unit, what, colors):
-        lines = []
-        for code in what:
-            this_line = []
-            for c in range(24):
-                has_char = []
-                for color in colors:
-                    if code == "stitle" and color == "s":  # if code in ["stitle", "title"] and color == "s":
-                        continue
-                    name = f"AirbusFBW/MCDU{mcdu_unit}{code}{color}"
-                    v = self._datarefs.get(name)
-                    if v is None:
-                        # logger.debug(f"no value for dataref {name}")
-                        continue
-                    if c < len(v):
-                        if v[c] != " ":
-                            if color in COLORS_BY_MCDU_COLOR_KEY:
-                                has_char.append((v[c], COLORS_BY_MCDU_COLOR_KEY[color]))
-                            else:
-                                has_char.append((v[c], color))
-                if len(has_char) == 1:
-                    this_line = this_line + has_char
-                else:
-                    # if len(has_char) > 1:
-                    #     logger.debug(f"mutiple char {code}, {c}: {has_char}")
-                    this_line.append((" ", COLORS.WHITE))
-            lines.append(this_line)
-        return lines
-
-    def get_line(self, mcdu_unit: int, line: int, what: list, colors):
-        lines = []
-        for code in what:
-            this_line = []
-            for c in range(24):
-                has_char = []
-                for color in colors:
-                    if code.endswith("cont") and color.startswith("L"):
-                        continue
-                    name = f"AirbusFBW/MCDU{mcdu_unit}{code}{line}{color}"
-                    v = self._datarefs.get(name)
-                    if v is None:
-                        # logger.debug(f"no value for dataref {name}")
-                        continue
-                    if c < len(v):
-                        if v[c] != " ":
-                            if color.startswith("L") and len(color) == 2:  # maps Lg, Lw to g, w.
-                                color = color[1]  # prevents "invalid color" further on
-                            if color in COLORS_BY_MCDU_COLOR_KEY:
-                                has_char.append((v[c], COLORS_BY_MCDU_COLOR_KEY[color]))
-                            else:
-                                has_char.append((v[c], color))
-                if len(has_char) == 1:
-                    this_line = this_line + has_char
-                else:
-                    # if len(has_char) > 1:
-                    #     logger.debug(f"mutiple char {code}, {c}: {has_char}")
-                    this_line.append((" ", COLORS.WHITE))
-            lines.append(this_line)
-        return lines
+    def update_line(self, mcdu_unit: int, line: int, what: str, colors):
+        """Line is 24 characters, 1 character is (<char>, <color>, <small>).
+        """
+        line_str = "" if line == -1 else str(line)
+        this_line = []
+        for c in range(24):
+            has_char = []
+            size = 1 if what in ["stitle", "scont", "label"] else 0
+            for color in colors:
+                if what.endswith("cont") and color.startswith("L"):
+                    continue
+                if size == 1 and color.startswith("L"):  # small becomes large
+                    size = 0
+                name = f"AirbusFBW/MCDU{mcdu_unit}{what}{line_str}{color}"
+                v = self._datarefs.get(name)
+                if v is None:
+                    # logger.debug(f"no value for dataref {name}")
+                    continue
+                if c < len(v):
+                    if v[c] != " ":
+                        if color.startswith("L") and len(color) == 2:  # maps Lg, Lw to g, w.
+                            color = color[1]  # prevents "invalid color" further on
+                        if color in COLORS_BY_MCDU_COLOR_KEY:
+                            has_char.append((v[c], COLORS_BY_MCDU_COLOR_KEY[color], size))
+                        else:
+                            has_char.append((v[c], color, size))
+            if len(has_char) == 1:
+                this_line = this_line + has_char
+            else:
+                # if len(has_char) > 1:
+                #     logger.debug(f"mutiple char {what}, {c}: {has_char}")
+                this_line.append((" ", COLORS.WHITE, size))
+        self.lines[f"AirbusFBW/MCDU{mcdu_unit}{what}{line_str}"] = this_line
 
     def show_page(self, mcdu_unit) -> list:
-        COLORS_BY_KEY = {c.key: c for c in COLORS}
+        """Adjusts for special characters
+        """
         page = [[" " for _ in range(PAGE_BYTES_PER_LINE)] for _ in range(PAGE_LINES)]
 
-        def show_line(line, lnum, font_small):
+        def combine(lr, sm):
+            return [sm[i] if lr[i][0] == " " else lr[i] for i in range(PAGE_CHARS_PER_LINE)]
+
+        def show_line(line, lnum):
             if line is None:
                 logger.warning(f"line {lnum} is empty, replacing by blank line")
                 line = [(" ", COLORS.WHITE) for i in range(PAGE_CHARS_PER_LINE)]
             pos = 0
             for c in line:
                 # this is for (s)pecial color (codes?)
+                if len(c) != 3:
+                    logger.warning(f"invalid character {c}, replaced by white space")
+                    c = (" ", COLORS.WHITE, 0)
                 if type(c[1]) is str and c[1] == "s":  # "special" characters (rev. eng.)
                     if c[0] == "0":
-                        c = (chr(SPECIAL_CHARACTERS.ARROW_LEFT.value), COLORS.CYAN)
+                        c = (chr(SPECIAL_CHARACTERS.ARROW_LEFT.value), COLORS.CYAN, c[2])
                     elif c[0] == "1":
-                        c = (chr(SPECIAL_CHARACTERS.ARROW_RIGHT.value), COLORS.CYAN)
+                        c = (chr(SPECIAL_CHARACTERS.ARROW_RIGHT.value), COLORS.CYAN, c[2])
                     elif c[0] == "2":
-                        c = (chr(SPECIAL_CHARACTERS.ARROW_LEFT.value), COLORS.WHITE)
+                        c = (chr(SPECIAL_CHARACTERS.ARROW_LEFT.value), COLORS.WHITE, c[2])
                     elif c[0] == "3":
-                        c = (chr(SPECIAL_CHARACTERS.ARROW_RIGHT.value), COLORS.WHITE)
+                        c = (chr(SPECIAL_CHARACTERS.ARROW_RIGHT.value), COLORS.WHITE, c[2])
                     elif c[0] == "4":
-                        c = (chr(SPECIAL_CHARACTERS.ARROW_LEFT.value), COLORS.AMBER)
+                        c = (chr(SPECIAL_CHARACTERS.ARROW_LEFT.value), COLORS.AMBER, c[2])
                     elif c[0] == "5":
-                        c = (chr(SPECIAL_CHARACTERS.ARROW_RIGHT.value), COLORS.AMBER)
+                        c = (chr(SPECIAL_CHARACTERS.ARROW_RIGHT.value), COLORS.AMBER, c[2])
                     elif c[0] == "A":
-                        c = (chr(SPECIAL_CHARACTERS.SQUARE_BRACKET_OPEN.value), COLORS.CYAN)
+                        c = (chr(SPECIAL_CHARACTERS.SQUARE_BRACKET_OPEN.value), COLORS.CYAN, c[2])
                     elif c[0] == "B":
-                        c = (chr(SPECIAL_CHARACTERS.SQUARE_BRACKET_CLOSE.value), COLORS.CYAN)
+                        c = (chr(SPECIAL_CHARACTERS.SQUARE_BRACKET_CLOSE.value), COLORS.CYAN, c[2])
                     elif c[0] == "E":
-                        c = (chr(SPECIAL_CHARACTERS.SQUARE.value), COLORS.AMBER)
+                        c = (chr(SPECIAL_CHARACTERS.SQUARE.value), COLORS.AMBER, c[2])
                 # this is for "all" color
                 if c[0] == "`":
-                    c = (chr(SPECIAL_CHARACTERS.DEGREE.value), c[1])
+                    c = (chr(SPECIAL_CHARACTERS.DEGREE.value), c[1], c[2])
                 color = c[1]
                 if type(color) is str:
                     logger.warning(f"invalid color {color}, line={[c[0] for c in line]} substituing default color")
                     color = COLORS.DEFAULT
                 page[lnum][pos * PAGE_BYTES_PER_CHAR] = color
-                page[lnum][pos * PAGE_BYTES_PER_CHAR + 1] = font_small
+                page[lnum][pos * PAGE_BYTES_PER_CHAR + 1] = c[2]
                 page[lnum][pos * PAGE_BYTES_PER_CHAR + 2] = c[0]  # char
                 pos = pos + 1
 
         logger.debug(f"page for mcdu unit {mcdu_unit}")
 
-        show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}title"), 0, 0)
+        line = combine(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}title"), self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}stitle"))
+        show_line(line, 0)
         for l in range(1, 7):
-            show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}label{l}"), 2 * l - 1, 1)
-            show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}cont{l}"), 2 * l, 0)
-        show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}sp"), 13, 0)
+            show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}label{l}"), 2 * l - 1)
+            line = combine(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}cont{l}"), self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}scont{l}"))
+            show_line(line, 2 * l)
+        show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}sp"), 13)
 
         # Additional, non printed keys in lower right corner of display
         vertslew_dref = self.set_mcdu_unit(str_in="AirbusFBW/MCDU1VertSlewKeys", mcdu_unit=mcdu_unit)

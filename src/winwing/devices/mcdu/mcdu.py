@@ -130,7 +130,7 @@ class MCDU(WinwingDevice):
         self.api.add_callback(CALLBACK_TYPE.ON_CLOSE, self.on_lost_connection)
 
     def init(self):
-        # self.display.test_screen()
+        self.display.test_screen()
         self.device.clear()
         self.display.clear_page()
         self.display.set_background(8)
