@@ -3,10 +3,12 @@
 Collects HID messages from device and send HID message to change display or
 turn LED on or off.
 """
-import os
+
 import logging
 import threading
 import time
+import importlib
+
 from enum import IntEnum
 from typing import Tuple
 
@@ -48,9 +50,26 @@ class SPECIAL_CHARACTERS(IntEnum):
     DELTA = 9912
     TEST = 9913
 
+# Fonts:
+# Airbus1: B612
+# Airbus2: HoneywellMCDU
+# Airbus3: Fenix’s MCDU font
+# 737: Some kind of Boeing font I found somewhere
+# X-Crafts Ejet: Special fonts from X-Crafts with special glyphs, for the Embraer FMS
+# VGA1: ProFontWindows (found in X-Plane/Resources/fonts)
+# VGA2: IBM VGA
+# VGA3: PixelSplitter
+# VGA4: Mono
+#
+# Bitmap font
+# About 16x24 pixels matrix (=48 bytes per char, about 104 characters to display ~= 4992 bytes)
+#
 
 class MCDUDevice(HIDDevice):
     def __init__(self, vendor_id: int, product_id: int):
+        self.hardware_identifier = 0x32
+        self.font = "b737" # airbus1 b737
+        ## Does not work with Airbus_2, Airbus_1 needs to load b737 before...
         HIDDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
         self.mcdu_unit = self.get_mcdu_mask()
 
@@ -66,7 +85,9 @@ class MCDUDevice(HIDDevice):
         return mcdu_unit
 
     def init(self):
-        super().init() #  creates the device
+        super().init()  #  creates the device
+        # Installing custom font
+        self.set_font()
         for s in MCDU_INIT_SEQUENCE:
             self.device.write(bytes(s))
 
@@ -92,7 +113,7 @@ class MCDUDevice(HIDDevice):
     def read(self, size: int, milliseconds: int) -> bytes:
         return self.device.read(size, milliseconds)
 
-    def write(self, message):
+    def write(self, message: bytes):
         self.device.write(message)
 
     def set_brightness(self, backlight: MCDU_BRIGHTNESS, brightness: int):
@@ -103,6 +124,28 @@ class MCDUDevice(HIDDevice):
     def set_led(self, led: MCDU_ANNUNCIATORS, on: bool):
         set_led_msg = [0x02, 0x32, 0xBB, 0, 0, 3, 0x49, led.value, 1 if on else 0, 0, 0, 0, 0, 0]
         self.device.write(bytes(set_led_msg))
+
+    def set_font(self):
+        if self.font is None:
+            return
+        buffer = []
+        try:
+            fontdata = importlib.import_module("winwing.devices.mcdu.fonts." + self.font)
+            if fontdata is None or fontdata.FONT_DATA is None:
+                logger.warning(f"could not load {self.font} font")
+                return
+        except:
+            logger.warning(f"could not load {self.font} font")
+            return
+        for row in fontdata.FONT_DATA:
+            if self.hardware_identifier != 0x32:
+                for i in range(len(row)):
+                    if row[i] == 0x32 and row[i + 1] == 0xbb:  # Sniffed packets always have the MCDU identifier
+                        row[i] = self.hardware_identifier
+                        row[i + 1] = 0xbb
+            buffer.extend(row)
+        self.device.write(bytes(buffer))
+        logger.debug(f"installed font {self.font} ({len(buffer)}b)")
 
     def _character_code(self, color: COLORS, font_small: bool = False) -> Tuple[int, int]:
         color_mask = color.ww_mask + 0x016B if font_small else color.ww_mask

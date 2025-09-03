@@ -4,6 +4,7 @@ Global management of the device, hardware interaction,
 communication with simulator, dealing with different types of Airbus aircrafts...
 
 """
+
 from __future__ import annotations
 import io
 import logging
@@ -25,19 +26,15 @@ from .device import SPECIAL_CHARACTERS, MCDUDevice, MCDU_DEVICE_MASKS
 from .report import MCDUDeviceReport, MCDUSimulatorReport
 from .constant import (
     AIRCRAFT_DATAREFS,
-    ICAO_DATAREF,
-    AUTHOR_DATAREF,
-    MCDU_ANNUNCIATORS,
+    ICAO_DATAREF,    AUTHOR_DATAREF,    MCDU_ANNUNCIATORS,
     MCDU_BRIGHTNESS,
     BRIGHTNESS_AUTO_ADJUST,
     SENSOR_CHECK_FREQUENCY,
     COLORS,
     MCDU_STATUS,
     PAGE_LINES,
-    PAGE_CHARS_PER_LINE,
-    PAGE_BYTES_PER_CHAR,
-    PAGE_BYTES_PER_LINE,
-)
+    PAGE_CHARS_PER_LINE,    PAGE_BYTES_PER_CHAR,
+    PAGE_BYTES_PER_LINE,)
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -134,6 +131,10 @@ class MCDU(WinwingDevice):
 
     def init(self):
         # self.display.test_screen()
+        self.device.clear()
+        self.display.clear_page()
+        self.display.set_background(8)
+        sleep(2)
         self.display.message("Welcome", extra=True)
 
     def reset_buttons(self):
@@ -535,12 +536,13 @@ class MCDU(WinwingDevice):
         maxlevel = 100000
         for r in BRIGHTNESS_AUTO_ADJUST:
             if maxlevel > avg >= r[0]:
-                if self.brightness.get(GLOBAL_BRIGHTNESS, "") != r[3]:
+                if self.brightness.get(GLOBAL_BRIGHTNESS, "") != r[4]:
                     self.device.set_brightness(backlight=MCDU_BRIGHTNESS.BACKLIGHT, brightness=r[1])
                     self.device.set_brightness(backlight=MCDU_BRIGHTNESS.SCREEN_BACKLIGHT, brightness=r[2])
-                    logger.info(f"brightness auto adjust to {r[3]}")
-                    logger.debug(f"brightness auto adjust: {r[3]} ({avg}): keyboard: {r[1]}, LCD: {r[2]}")
-                    self.brightness[GLOBAL_BRIGHTNESS] = r[3]
+                    self.device.set_brightness(backlight=MCDU_BRIGHTNESS.LEDS_BRIGHTNESS, brightness=r[3])
+                    logger.info(f"brightness auto adjust to {r[4]}")
+                    logger.debug(f"brightness auto adjust: {r[4]} ({avg}): keyboard: {r[1]}, LCD: {r[2]}, LEDS: {r[3]}")
+                    self.brightness[GLOBAL_BRIGHTNESS] = r[4]
                     break
             maxlevel = r[0]
 
@@ -718,9 +720,27 @@ class MCDUDisplay:
         if extra:
             sleep(1)
 
+    def set_background(self, code: int = 8):
+        if code < 0 or code > 8:
+            logger.warning(f"invalid background color code {code}")
+            return
+        bi = 0x32
+#fmt off
+        data = [0xF0, 0x00, 0x0A, 0x12, bi, 0xBB, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00, 0xD4, 0xAC, 0x09, 0x00]
+        xtra = [
+            0x00,0x01,0x00,0x00,0x00,(0x0C + code),0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+        ]
+#fmt on
+        self.device.write(bytes(data + xtra))
+
     def test_screen(self):
         self.device.clear()
         self.clear_page()
+        self.set_background(8)
+        sleep(1)
+        # for i in range(9):
+        #     self.set_background(i)
+        #     sleep(1)
         prnt = "".join([chr(c) for c in range(33, 127)])
         lines = textwrap.wrap(prnt, 23)
         lines.append("".join([chr(c.value) for c in SPECIAL_CHARACTERS]))

@@ -14,6 +14,7 @@ or executed commands.
 In turn, these simulator-reports trigger actions on the device: refresh the display (set-display),
 turn this LED on or off, adjust screen brightness or keyboard backlight...
 """
+
 import logging
 from abc import ABC, abstractmethod
 

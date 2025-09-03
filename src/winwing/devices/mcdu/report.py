@@ -1,5 +1,6 @@
 """Actions and reports for usage of MCDU device and simulator representation.
 """
+
 import logging
 from typing import Annotated
 from enum import Enum

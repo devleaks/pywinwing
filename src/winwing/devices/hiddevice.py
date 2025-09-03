@@ -6,6 +6,7 @@ either to read data from it, or send data to it.
 In the case of HID device/protocol, communication is done through "reports",
 although they are seldom built from streams of bytes rather than "logical" entities.
 """
+
 import os
 import logging
 

@@ -316,8 +316,7 @@ class Aircraft(ABC):
         return ""
 
     def wait_for_aircraft_variant(self, api):
-        """Wait for value of aicraft variant datarefs
-        """
+        """Wait for value of aicraft variant datarefs"""
         vdrefs = self.variant_datarefs()
         if len(vdrefs) == 0:
             logger.info("aicraft has not variant")

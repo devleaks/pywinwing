@@ -1,5 +1,6 @@
 """Abstract base class for all Winwing Devices like MCDU, EFIS, FCU, etc.
 """
+
 import logging
 from abc import ABC, abstractmethod
 

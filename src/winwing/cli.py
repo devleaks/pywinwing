@@ -17,7 +17,9 @@ options:
   --extension ext_dir [ext_dir ...]
                         DEVELOPER ONLY - adds extension folders to application
 """
+
 import sys
+
 # sys.path.append("<path-to-cloned-pywinwing-github-repository>/src")
 import os
 import logging

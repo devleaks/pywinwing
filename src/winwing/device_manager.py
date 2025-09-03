@@ -3,6 +3,7 @@
 Helper class to collect and display device information
 
 """
+
 import logging
 from typing import List
 
