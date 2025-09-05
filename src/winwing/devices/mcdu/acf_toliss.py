@@ -131,7 +131,7 @@ class ToLissAirbus(MCDUAircraft):
         colors = TOLISS_MCDU_LINE_COLOR_CODES
         line = -1
         what = m.group("name")
-        if what.endswith("title"): # stitle, title
+        if what.endswith("title"):  # stitle, title
             colors = "bgwys"
         elif what == "sp":
             colors = "aw"
@@ -147,8 +147,7 @@ class ToLissAirbus(MCDUAircraft):
         return value
 
     def update_line(self, mcdu_unit: int, line: int, what: str, colors):
-        """Line is 24 characters, 1 character is (<char>, <color>, <small>).
-        """
+        """Line is 24 characters, 1 character is (<char>, <color>, <small>)."""
         line_str = "" if line == -1 else str(line)
         this_line = []
         for c in range(24):
@@ -181,8 +180,7 @@ class ToLissAirbus(MCDUAircraft):
         self.lines[f"AirbusFBW/MCDU{mcdu_unit}{what}{line_str}"] = this_line
 
     def show_page(self, mcdu_unit) -> list:
-        """Adjusts for special characters
-        """
+        """Adjusts for special characters"""
         page = [[" " for _ in range(PAGE_BYTES_PER_LINE)] for _ in range(PAGE_LINES)]
 
         def combine(lr, sm):
@@ -225,7 +223,7 @@ class ToLissAirbus(MCDUAircraft):
                     logger.warning(f"invalid color {color}, line={[c[0] for c in line]} substituing default color")
                     color = COLORS.DEFAULT
                 page[lnum][pos * PAGE_BYTES_PER_CHAR] = color
-                page[lnum][pos * PAGE_BYTES_PER_CHAR + 1] = c[2]
+                page[lnum][pos * PAGE_BYTES_PER_CHAR + 1] = c[2]  # size 0=Large, 1=small
                 page[lnum][pos * PAGE_BYTES_PER_CHAR + 2] = c[0]  # char
                 pos = pos + 1
 

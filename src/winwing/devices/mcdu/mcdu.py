@@ -26,15 +26,19 @@ from .device import SPECIAL_CHARACTERS, MCDUDevice, MCDU_DEVICE_MASKS
 from .report import MCDUDeviceReport, MCDUSimulatorReport
 from .constant import (
     AIRCRAFT_DATAREFS,
-    ICAO_DATAREF,    AUTHOR_DATAREF,    MCDU_ANNUNCIATORS,
+    ICAO_DATAREF,
+    AUTHOR_DATAREF,
+    MCDU_ANNUNCIATORS,
     MCDU_BRIGHTNESS,
     BRIGHTNESS_AUTO_ADJUST,
     SENSOR_CHECK_FREQUENCY,
     COLORS,
     MCDU_STATUS,
     PAGE_LINES,
-    PAGE_CHARS_PER_LINE,    PAGE_BYTES_PER_CHAR,
-    PAGE_BYTES_PER_LINE,)
+    PAGE_CHARS_PER_LINE,
+    PAGE_BYTES_PER_CHAR,
+    PAGE_BYTES_PER_LINE,
+)
 
 logger = logging.getLogger(__name__)
 # logger.setLevel(logging.DEBUG)
@@ -726,12 +730,59 @@ class MCDUDisplay:
             logger.warning(f"invalid background color code {code}")
             return
         bi = 0x32
-#fmt off
+        # fmt off
         data = [0xF0, 0x00, 0x0A, 0x12, bi, 0xBB, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00, 0xD4, 0xAC, 0x09, 0x00]
         xtra = [
-            0x00,0x01,0x00,0x00,0x00,(0x0C + code),0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+            0x00,
+            0x01,
+            0x00,
+            0x00,
+            0x00,
+            (0x0C + code),
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
         ]
-#fmt on
+        # fmt on
         self.device.write(bytes(data + xtra))
 
     def test_screen(self):

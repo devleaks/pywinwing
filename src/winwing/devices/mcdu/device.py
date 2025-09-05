@@ -50,6 +50,7 @@ class SPECIAL_CHARACTERS(IntEnum):
     DELTA = 9912
     TEST = 9913
 
+
 # Fonts:
 # Airbus1: B612
 # Airbus2: HoneywellMCDU
@@ -65,10 +66,11 @@ class SPECIAL_CHARACTERS(IntEnum):
 # About 16x24 pixels matrix (=48 bytes per char, about 104 characters to display ~= 4992 bytes)
 #
 
+
 class MCDUDevice(HIDDevice):
     def __init__(self, vendor_id: int, product_id: int):
         self.hardware_identifier = 0x32
-        self.font = "b737" # airbus1 b737
+        self.font = "b737"  # airbus1 b737
         ## Does not work with Airbus_2, Airbus_1 needs to load b737 before...
         HIDDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
         self.mcdu_unit = self.get_mcdu_mask()
@@ -140,9 +142,9 @@ class MCDUDevice(HIDDevice):
         for row in fontdata.FONT_DATA:
             if self.hardware_identifier != 0x32:
                 for i in range(len(row)):
-                    if row[i] == 0x32 and row[i + 1] == 0xbb:  # Sniffed packets always have the MCDU identifier
+                    if row[i] == 0x32 and row[i + 1] == 0xBB:  # Sniffed packets always have the MCDU identifier
                         row[i] = self.hardware_identifier
-                        row[i + 1] = 0xbb
+                        row[i + 1] = 0xBB
             buffer.extend(row)
         self.device.write(bytes(buffer))
         logger.debug(f"installed font {self.font} ({len(buffer)}b)")
