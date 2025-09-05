@@ -34,6 +34,14 @@ TOLISS_MCDU_LINE_COLOR_CODES = [
     "Lw",  # large white
     "Lg",  # large green
 ]
+# notes:
+# First "title" line is Large font, there are then alternate "label" line (small font) and content line (Large font (cont) AND small font (scont)).
+# Lg, Lw are Large font, white or green, used on line with small fonts (like "label" lines)
+# Lines with both large and small fonts are "combined" into a single line, in case there is a char in Large it has precedence on a char in small.
+# "sp" lines (color w or a) is last prompt line, always Large font.
+# Color "s" is special characters, coded, coding includes both the glyph and the color, example: code '4' is amber left arrow.
+# Special characters are treated towards the end, being replaced by actual glyphs.
+# Letters are mostly (exclusively?) UPPER case, only their sizes varies.
 
 COLORS_BY_MCDU_COLOR_KEY = {c.key: c for c in COLORS}
 
