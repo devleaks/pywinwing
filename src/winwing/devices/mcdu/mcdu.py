@@ -55,7 +55,7 @@ class MCDU(WinwingDevice):
     """
 
     WINWING_PRODUCT_IDS = [47926, 47930, 47934]
-    VERSION = "0.11.0"
+    VERSION = "1.0.0"
 
     def __init__(self, vendor_id: int, product_id: int, **kwargs):
         WinwingDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
@@ -136,6 +136,7 @@ class MCDU(WinwingDevice):
         self.display.set_background(8)
         sleep(2)
         self.display.message("Welcome", extra=True)
+        sleep(2)
 
     def reset_buttons(self):
         self._buttons_press_event = [0] * len(self.device_reports)
