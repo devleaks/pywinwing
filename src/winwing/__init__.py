@@ -1,4 +1,4 @@
 # this is the version of the whole package
 # there also is a version for each device handler
 
-version = "0.4.1"
+version = "1.0.0"
