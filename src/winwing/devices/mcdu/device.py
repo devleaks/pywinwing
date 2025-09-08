@@ -70,7 +70,7 @@ class SPECIAL_CHARACTERS(IntEnum):
 class MCDUDevice(HIDDevice):
     def __init__(self, vendor_id: int, product_id: int):
         self.hardware_identifier = 0x32
-        self.font = "b737"  # airbus1 b737
+        self.font = None  # airbus1 b737
         ## Does not work with Airbus_2, Airbus_1 needs to load b737 before...
         HIDDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
         self.mcdu_unit = self.get_mcdu_mask()
