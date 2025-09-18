@@ -71,6 +71,7 @@ ignore = []
 
 [tool.black]
 line-length = 160
+target-version = ["py312"]
 
 [tool.flake8]
 max-line-length = 160

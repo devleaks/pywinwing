@@ -1,3 +1,4 @@
+# ftm off
 FONT_DATA = [
     [
         0xF0,
@@ -38346,3 +38347,4 @@ FONT_DATA = [
         0x00,
     ],
 ]
+# ftm on

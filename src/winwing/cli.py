@@ -33,6 +33,7 @@ import pkgutil
 
 
 import hid
+import winwing
 from xpwebapi import ws_api, beacon
 
 from winwing import version
@@ -48,6 +49,8 @@ logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(description="Winwing Devices for X-Plane")
 parser.add_argument("--version", action="store_true", help="shows version information and exit")
+parser.add_argument("-c", "--clear", action="store_true", help="clear Winwing device screen")
+parser.add_argument("-w", action="store_true", help="clear Winwing device screen with logo")
 parser.add_argument("-v", "--verbose", action="store_true", help="shows more information")
 parser.add_argument("-l", "--list", action="store_true", help="lists Wingwing devices connected to the system")
 parser.add_argument("-a", "--list-all", action="store_true", help="lists all HID devices connected to the system")
@@ -190,6 +193,7 @@ def main():
         api = ws_api(host=host, port=port)
 
     try:
+        no_device = True
         for winwing_device in winwing_devices:
             winwing_device.set_api(api)
             if args.aircraft is not None:
@@ -197,7 +201,16 @@ def main():
             if args.extension is not None and len(args.extension) > 0:
                 winwing_device.set_extension_paths(args.extension)
 
-            winwing_device.run()
+            if args.clear or args.w:
+                winwing_device.clear(logo=args.w)
+            else:
+                no_device = False
+                winwing_device.run()
+        if no_device:
+            if api is not None:
+                api.disconnect()
+            if probe is not None:
+                probe.stop_monitor()
     except KeyboardInterrupt:
         for winwing_device in winwing_devices:
             winwing_device.terminate()

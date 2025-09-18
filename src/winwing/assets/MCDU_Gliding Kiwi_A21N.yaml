@@ -1,6 +1,14 @@
 author: Gliding Kiwi
 icao: A21N
 # variant: none
+#
+# Example of variants:
+#
+# A321-231: IAE-2533-A5 (ceo)
+# A321-211: CFM56-5B3 (ceo)
+# A321-253NY: CFM-LEAP 1A33 (neo)
+# A321-272NY: PW1130G-JM (neo)
+#
 mcdu-units: [1, 2]
 device-reports:
 - report-type: key-press

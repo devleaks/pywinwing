@@ -59,7 +59,7 @@ class MCDU(WinwingDevice):
     """
 
     WINWING_PRODUCT_IDS = [47926, 47930, 47934]
-    VERSION = "1.0.0"
+    VERSION = "1.0.1"
 
     def __init__(self, vendor_id: int, product_id: int, **kwargs):
         WinwingDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
@@ -134,7 +134,7 @@ class MCDU(WinwingDevice):
         self.api.add_callback(CALLBACK_TYPE.ON_CLOSE, self.on_lost_connection)
 
     def init(self):
-        # self.display.test_screen()
+        self.display.test_screen()
         self.device.clear()
         self.display.clear_page()
         self.display.set_background(8)
@@ -246,33 +246,6 @@ class MCDU(WinwingDevice):
 
     def unregister_all_datarefs(self):
         self.api.unmonitor_datarefs(datarefs=self._datarefs, reason="Winwing MCDU terminates")
-
-    def run(self):
-        logger.debug("starting..")
-        self.device.set_callback(self.reader_callback)
-        self.device.start()
-        self.display.message("waiting for X-Plane...")
-        self.api.connect()
-        self.wait_for_resources()
-        logger.debug("..started")
-
-    def terminate(self):
-        logger.debug("terminating..")
-        # stop receiving actions from devices
-        self.device.set_callback(None)
-        # ask to stop sending dataref updates
-        self.unregister_all_datarefs()
-        # disconnect api
-        self.api.disconnect()
-        # stop display update loop
-        self.display.stop_update()
-        # clear screen
-        self.device.clear()
-        # turn off all annunciator
-        for a in MCDU_ANNUNCIATORS:
-            self.set_annunciator(annunciator=a, on=False)
-        self.device.terminate()
-        logger.debug("..terminated")
 
     def reader_callback(self, data_in):
         def xor_bitmask(a, b, bitmask):
@@ -556,6 +529,42 @@ class MCDU(WinwingDevice):
 
     def set_unit_warning(self, on: bool = True):
         self.device.set_unit_led(on=on)
+
+    def run(self):
+        logger.debug("starting..")
+        self.device.set_callback(self.reader_callback)
+        self.device.start()
+        self.display.message("waiting for X-Plane...")
+        self.api.connect()
+        self.wait_for_resources()
+        logger.debug("..started")
+
+    def terminate(self):
+        logger.debug("terminating..")
+        # stop receiving actions from devices
+        self.device.set_callback(None)
+        # ask to stop sending dataref updates
+        self.unregister_all_datarefs()
+        # disconnect api
+        self.api.disconnect()
+        # stop display update loop
+        self.display.stop_update()
+        # clear screen
+        self.device.clear()
+        # turn off all annunciator
+        for a in MCDU_ANNUNCIATORS:
+            self.set_annunciator(annunciator=a, on=False)
+        self.device.terminate()
+        logger.debug("..terminated")
+
+    def clear(self, logo: bool = False):
+        self.device.clear()
+        logostr = ""
+        if logo:
+            self.display.clear_page()
+            self.display.set_background(8)
+            logostr = " with logo"
+        logger.info(f"screen cleared{logostr}")
 
 
 # ##################
