@@ -9,17 +9,17 @@ from __future__ import annotations
 import io
 import logging
 import threading
-from typing import Dict, List
+from typing import List
 from time import sleep
 from datetime import datetime
 import textwrap
 
 import chardet
 
-from xpwebapi import CALLBACK_TYPE, DATAREF_DATATYPE, Dataref
+from xpwebapi import CALLBACK_TYPE, DATAREF_DATATYPE, Dataref, DatarefValueType
 
 import winwing
-from winwing.devices import mcdu  # Must import since it contains references to other classes
+from winwing.devices import mcdu  # Must import since it loads other classes
 from winwing.helpers.aircraft import Aircraft
 from ..winwing import WinwingDevice
 from .device import SPECIAL_CHARACTERS, MCDUDevice, MCDU_DEVICE_MASKS
@@ -41,7 +41,8 @@ from .constant import (
 )
 
 logger = logging.getLogger(__name__)
-# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)
+
 # When repetitive warnings, only show first ones:
 MAX_WARNING_COUNT = 3
 
@@ -59,7 +60,7 @@ class MCDU(WinwingDevice):
     """
 
     WINWING_PRODUCT_IDS = [47926, 47930, 47934]
-    VERSION = "1.0.1"
+    VERSION = "1.0.2"
 
     def __init__(self, vendor_id: int, product_id: int, **kwargs):
         WinwingDevice.__init__(self, vendor_id=vendor_id, product_id=product_id)
@@ -134,7 +135,7 @@ class MCDU(WinwingDevice):
         self.api.add_callback(CALLBACK_TYPE.ON_CLOSE, self.on_lost_connection)
 
     def init(self):
-        self.display.test_screen()
+        # self.display.test_screen()
         self.device.clear()
         self.display.clear_page()
         self.display.set_background(8)
@@ -179,6 +180,10 @@ class MCDU(WinwingDevice):
                 self.author = self.aircraft.author
                 self.icao = self.aircraft.icao
                 self.variant = self.aircraft.variant
+
+        if self.aircraft is None:
+            logger.error("cannot load aircraft profile")
+            return
 
         self.display.set_aircraft(self.aircraft)
 
@@ -225,15 +230,13 @@ class MCDU(WinwingDevice):
     def unload_datarefs(self):
         self.unregister_datarefs(paths=list(self._loaded_datarefs))
 
-    def get_dataref_value(self, path: str, encoding: str = "ascii") -> int | float | str | None:
+    def get_dataref_value(self, path: str, encoding: str = "ascii") -> DatarefValueType | None:
         """Returns the value of a single dataref"""
         d = self._datarefs.get(path)
         value = d.value if d is not None else None
         if type(value) is bytes and d.value_type == DATAREF_DATATYPE.DATA.value:
-            try:
-                value = value.decode(encoding=encoding).replace("\u0000", "")
-            except:
-                logger.warning(f"could not decode value {value} with encoding {encoding}", exc_info=True)
+            value = d.get_string_value(encoding=encoding)
+        logger.debug(f"returning: {value}, {type(d.value)}, {d.value_type}")
         return value
 
     def register_datarefs(self, paths: List[str]):
@@ -357,7 +360,7 @@ class MCDU(WinwingDevice):
         logger.debug("loading aircraft data..")
         self.load_aircraft()
         logger.debug("..aircraft loaded")
-        if not self.aircraft.loaded:
+        if self.aircraft is None or not self.aircraft.loaded:
             self.display.message("no aircraft")
             self.set_annunciator(annunciator=MCDU_ANNUNCIATORS.FAIL, on=True)
             return
@@ -448,6 +451,7 @@ class MCDU(WinwingDevice):
     def change_mcdu_unit(self) -> int:
         # To do:
         # 1. Unregister current unit datarefs
+        self.display.pause()  # prevent update during dataref changes
         self.set_unit_warning()
         self.unload_datarefs()
         # 2. Change unit id
@@ -456,6 +460,7 @@ class MCDU(WinwingDevice):
         # 3. Register new unit datarefs and wait for data
         self.wait_for_data()
         logger.info(f"MCDU unit {self.device.mcdu_unit_id}")
+        self.display.unpause()
         self.display._updated.set()
         return self.device.mcdu_unit_id
 
@@ -676,6 +681,7 @@ class MCDUDisplay:
         self.datarefs = {}
 
         self._all_ok = False
+        self.update_paused = False
         self._last_display = datetime.now()
         self._updated = threading.Event()
         self.update_event = threading.Event()
@@ -882,7 +888,16 @@ class MCDUDisplay:
     def stop_update(self):
         self.update_event.set()
 
+    def pause(self):
+        self.update_paused = True
+
+    def unpause(self):
+        self.update_paused = False
+
     def show_page(self):
+        if self.update_paused:
+            logger.debug("updated paused, no update")
+            return
         self.page = self.aircraft.show_page(mcdu_unit=self.device.mcdu_unit_id)
 
         # display mcdu on winwing

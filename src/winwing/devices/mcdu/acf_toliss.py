@@ -58,6 +58,7 @@ class ToLissAirbus(MCDUAircraft):
         MCDUAircraft.key(icao="A321", author="Gliding Kiwi"),
         MCDUAircraft.key(icao="A21N", author="Gliding Kiwi"),
         MCDUAircraft.key(icao="A339", author="GlidingKiwi"),
+        MCDUAircraft.key(icao="A339", author="Gliding Kiwi"),
         MCDUAircraft.key(icao="A359", author="FlightFactor and ToLiss"),
     ]
 
@@ -137,6 +138,7 @@ class ToLissAirbus(MCDUAircraft):
             colors = "aw"
         else:  # label, scont, cont
             line = int(m.group("line"))
+        # print(">>>", mcdu_unit, what, line, colors)
         self.update_line(mcdu_unit=mcdu_unit, line=line, what=what, colors=colors)
 
     def encode_bytes(self, dataref, value) -> str | bytes:
@@ -182,20 +184,29 @@ class ToLissAirbus(MCDUAircraft):
     def show_page(self, mcdu_unit) -> list:
         """Adjusts for special characters"""
         page = [[" " for _ in range(PAGE_BYTES_PER_LINE)] for _ in range(PAGE_LINES)]
+        DEFAULT_CHARACTER = (" ", COLORS.WHITE, 0)
 
         def combine(lr, sm):
-            return [sm[i] if lr[i][0] == " " else lr[i] for i in range(PAGE_CHARS_PER_LINE)]
+            lr1 = self.lines.get(lr)
+            sm1 = self.lines.get(sm)
+            if lr1 is None:
+                logger.warning(f"cannot combine empty line {lr}, returning blank line")
+                return [DEFAULT_CHARACTER for i in range(PAGE_CHARS_PER_LINE)]
+            if sm1 is None:
+                logger.warning(f"cannot combine empty line {sm}, returning blank line")
+                return [DEFAULT_CHARACTER for i in range(PAGE_CHARS_PER_LINE)]
+            return [sm1[i] if lr1[i][0] == " " else lr1[i] for i in range(PAGE_CHARS_PER_LINE)]
 
         def show_line(line, lnum):
             if line is None:
                 logger.warning(f"line {lnum} is empty, replacing by blank line")
-                line = [(" ", COLORS.WHITE) for i in range(PAGE_CHARS_PER_LINE)]
+                line = [DEFAULT_CHARACTER for i in range(PAGE_CHARS_PER_LINE)]
             pos = 0
             for c in line:
                 # this is for (s)pecial color (codes?)
                 if len(c) != 3:
                     logger.warning(f"invalid character {c}, replaced by white space")
-                    c = (" ", COLORS.WHITE, 0)
+                    c = DEFAULT_CHARACTER
                 if type(c[1]) is str and c[1] == "s":  # "special" characters (rev. eng.)
                     if c[0] == "0":
                         c = (chr(SPECIAL_CHARACTERS.ARROW_LEFT.value), COLORS.CYAN, c[2])
@@ -229,11 +240,11 @@ class ToLissAirbus(MCDUAircraft):
 
         logger.debug(f"page for mcdu unit {mcdu_unit}")
 
-        line = combine(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}title"), self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}stitle"))
+        line = combine(f"AirbusFBW/MCDU{mcdu_unit}title", f"AirbusFBW/MCDU{mcdu_unit}stitle")
         show_line(line, 0)
         for l in range(1, 7):
             show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}label{l}"), 2 * l - 1)
-            line = combine(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}cont{l}"), self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}scont{l}"))
+            line = combine(f"AirbusFBW/MCDU{mcdu_unit}cont{l}", f"AirbusFBW/MCDU{mcdu_unit}scont{l}")
             show_line(line, 2 * l)
         show_line(self.lines.get(f"AirbusFBW/MCDU{mcdu_unit}sp"), 13)
 
